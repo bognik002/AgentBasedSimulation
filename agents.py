@@ -361,7 +361,7 @@ class NoiseAgent(Trader):
 
         # Market order
         if order_exec == 'market':
-            return spread_volume[order_type]
+            return random.lognormvariate(mu, sigma)
 
         # Limit order
         if order_exec == 'limit':
@@ -372,15 +372,14 @@ class NoiseAgent(Trader):
         Function to call agent action
         :param spread:
         :param random_state: random unif (0,1) which prescribes which action to perform
-        :return: (order_type, quantity, price)
+        :return: void
         """
-        assert self.market.order_book['bid'] is not None
-        assert self.market.order_book['ask'] is not None
+        if not spread['bid'] or not spread['ask']:
+            return
 
         if random_state is None:
             random_state = random.random()
 
-        # BID order
         if random_state > .5:
             order_type = 'bid'
         else:
@@ -388,7 +387,7 @@ class NoiseAgent(Trader):
 
         random_state = random.random()
         # Market order
-        if random_state > .95:
+        if random_state > .85:
             quantity = self._draw_quantity(order_type, 'market', self.mu, self.sigma)
             if order_type == 'bid':
                 self._buy_market(quantity)
@@ -396,7 +395,7 @@ class NoiseAgent(Trader):
                 self._sell_market(quantity)
 
         # Limit order
-        elif random_state > .65:
+        elif random_state > .50:
             price = self._draw_price(order_type, spread, self.lambda_)
             quantity = self._draw_quantity(order_type, 'limit', self.mu, self.sigma)
             if order_type == 'bid':
@@ -411,16 +410,18 @@ class NoiseAgent(Trader):
 
 class MarketMaker(Trader):
     def __init__(self, market: ExchangeAgent, agent_id, inventory, ul, ll):
+        """
+        self.state in (Active, Panic)
+        """
         super().__init__(market, agent_id, inventory, agent_name='MarketMaker')
         self.ul = ul  # Upper Limit
         self.ll = ll  # Lower Limit
-
-        # Diagnostics
-        self.inventory_states = [self.inventory]
+        self.state = None
 
     def call(self, spread):
-        assert self.market.order_book['bid'] is not None
-        assert self.market.order_book['ask'] is not None
+        if not spread['bid'] or not spread['ask']:
+            self.state = 'Panic'
+            return
 
         # Clear previous orders
         self.market.cancel_all('bid', self)
@@ -429,12 +430,14 @@ class MarketMaker(Trader):
         bid_volume = max(0, self.ul - 1 - self.inventory)
         ask_volume = max(0, self.inventory - self.ll - 1)
 
+        if not bid_volume or not ask_volume:
+            self.state = 'Panic'
+        else:
+            self.state = 'Active'
+
         base_offset = -(spread['ask'] - spread['bid'] - 1) * (self.inventory / self.ul)
 
         # BID
         self._buy_limit(bid_volume, spread['bid'] + base_offset)
         # ASK
         self._sell_limit(ask_volume, spread['ask'] + base_offset)
-
-        # Diagnostics
-        self.inventory_states.append(self.inventory)
