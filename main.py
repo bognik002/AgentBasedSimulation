@@ -3,17 +3,8 @@ from simulator import Simulator
 import matplotlib.pyplot as plt
 
 spread_initial = {'bid': 200, 'ask': 250}
-market_params = {
-    'lambda_': .2,
-    'mu': 0,
-    'sigma': .2
-}
-
-noise_params = {
-    'lambda_': 1,
-    'mu': 0,
-    'sigma': 1
-}
+market_params = {'lambda_': .2, 'mu': 0, 'sigma': .2}
+noise_params = {'lambda_': 1, 'mu': 0, 'sigma': 1}
 
 # Initialize Exchange Agent
 exchange = ExchangeAgent(spread_init=spread_initial, depth=1000, **market_params)
@@ -28,4 +19,3 @@ simulator.plot_price(show_spread=False)
 simulator.plot_market_volume()
 simulator.plot_inventory()
 plt.show()
-

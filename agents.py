@@ -4,21 +4,59 @@ import matplotlib.pyplot as plt
 from collections import deque
 
 
+class Order:
+    def __init__(self, price, qty, order_type, trader_link=None):
+        # Properties
+        self.price = price
+        self.qty = qty
+        self.order_type = order_type
+        self.trader_link = trader_link
+
+        # Connections
+        self.left = None
+        self.right = None
+
+    def to_dict(self):
+        return {'price': self.price, 'qty': self.qty, 'order_type': self.order_type,
+                'trader_link': self.trader_link}
+
+
+class OrderIter:
+    def __init__(self, order_list):
+        self.order = order_list.first
+
+    def __next__(self):
+        if self.order:
+            next_order = self.order
+            self.order = self.order.right
+            return next_order
+        raise StopIteration
+
+
+class OrderList:
+    def __init__(self):
+        self.first = None
+        self.last = None
+
+    def __iter__(self):
+        return OrderIter(self)
+
+    def append(self, order: Order):
+        if not self.first:
+            self.first = order
+            self.last = order
+            return
+
+        self.last.right = order
+        order.left = self.last
+        self.last = order
+
+    def insert(self, price, order: Order):
+        pass
+
+
 class ExchangeAgent:
     def __init__(self, spread_init=None, depth=0, lambda_=2, mu=0, sigma=1):
-        """
-        Initialize market state using noise traders limit orders from both sides of spread_init
-
-        order: {'price': ###, 'qty': ###, 'agent': ###}
-        order_book: {'bid': list(order1, order2, ...), 'ask': list(order1, order2, ...)}
-        order book is always sorted according to price
-
-        :param spread_init: {'bid': ###, 'ask': ###}
-        :param depth: number of initial noise orders in both sides
-        :param lambda_: lambda for order price
-        :param mu: volume parameter
-        :param sigma: volume parameter
-        """
         self.order_book = {'bid': deque(), 'ask': deque()}
         self.name = 'market'
         self.inventory = 0
@@ -39,10 +77,6 @@ class ExchangeAgent:
             self.limit_order('ask', quantity, spread_init['ask'] + delta, self)
 
     def _clear_glass(self, order_type):
-        """
-        If we have BID order type, then we will fulfill ASK side of the glass
-        If we have ASK order type, we do the opposite
-        """
         if order_type == 'bid':
             self.order_book['ask'] = deque([order for order in self.order_book['ask'] if order['qty'] > 0])
         if order_type == 'ask':
@@ -104,10 +138,6 @@ class ExchangeAgent:
         2) If the order is left unfilled, add it in the beginning of the ASK list
         3) clear glass from resolved orders
 
-        :param order_type: 'bid' or 'ask'
-        :param quantity
-        :param price
-        :param trader_link
         :return: void
         """
 
@@ -218,10 +248,7 @@ class ExchangeAgent:
         1) Iterate through BID and fulfill orders if OUR quantity is 0 then stop and return TRUE
         2) If quantity > 0 then return False
 
-        :param order_type: 'bid' or 'ask'
-        :param quantity
-        :param trader_link
-        :return: 0 - order is resolved, qty - order is canceled and qty is remaining
+        :return: qty remaining
         """
 
         # If BID
@@ -258,8 +285,6 @@ class ExchangeAgent:
         """
         Cancel random order from the order_type side of the order book
 
-        :param order_type:
-        :param trader_link:
         :return: bool (True - order removed, False - otherwise)
         """
         for i, order in enumerate(self.order_book[order_type]):
