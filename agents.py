@@ -10,15 +10,14 @@ class Order:
         self.price = price
         self.qty = qty
         self.order_type = order_type
-        self.trader_link = trader_link
-
+        self.trader = trader_link
         # Connections
         self.left = None
         self.right = None
 
     def to_dict(self):
         return {'price': self.price, 'qty': self.qty, 'order_type': self.order_type,
-                'trader_link': self.trader_link}
+                'trader_link': self.trader}  # trader.name
 
 
 class OrderIter:
@@ -34,12 +33,29 @@ class OrderIter:
 
 
 class OrderList:
-    def __init__(self):
+    def __init__(self, order_type: str):
         self.first = None
         self.last = None
+        self.order_type = order_type
 
     def __iter__(self):
         return OrderIter(self)
+
+    def to_list(self):
+        return [order.to_dict() for order in self]
+
+    def remove(self, order: Order):
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
+        if order == self.first:
+            self.first = order.right
+        if order == self.last:
+            self.last = order.left
+
+        if order.left:
+            order.left.right = order.right
+        if order.right:
+            order.right.left = order.left
 
     def append(self, order: Order):
         if not self.first:
@@ -51,8 +67,95 @@ class OrderList:
         order.left = self.last
         self.last = order
 
-    def insert(self, price, order: Order):
-        pass
+    def insert(self, order: Order):
+        # If wrong order type to insert
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
+
+        # If empty
+        if not self.first:
+            self.append(order)
+            return
+
+        if self.order_type == 'bid':
+            # Insert order in the beginning
+            if order.price >= self.first.price:
+                order.right = self.first
+                self.first.left = order
+                self.first = order
+                return
+
+            # Insert order in the middle
+            for val in self:
+                if order.price >= val.price:
+                    order.left = val.left
+                    order.right = val
+                    order.left.right = order
+                    order.right.left = order
+                    return
+        else:
+            for val in self:
+                # Insert order in the beginning
+                if order.price <= self.first.price:
+                    order.right = self.first
+                    self.first.left = order
+                    self.first = order
+                    return
+
+                # Insert order in the middle
+                if order.price <= val.price:
+                    order.left = val.left
+                    order.right = val
+                    order.left.right = order
+                    order.right.left = order
+                    return
+
+        # Insert to the end
+        self.append(order)
+
+    def fulfill(self, order: Order) -> Order:
+        if order.order_type == self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
+
+        if self.order_type == 'bid':
+            for val in self:
+                if order.qty == 0:
+                    break
+                if val.price < order.price:
+                    break
+
+                tmp = min(order.qty, val.qty)  # Quantity traded currently
+                val.qty -= tmp
+                order.qty -= tmp
+
+                if val.qty == 0:
+                    self.remove(val)
+
+        else:
+            for val in self:
+                if order.qty == 0:
+                    break
+                if val.price > order.price:
+                    break
+
+                tmp = min(order.qty, val.qty)  # Quantity traded currently
+                val.qty -= tmp
+                order.qty -= tmp
+
+                if val.qty == 0:
+                    self.remove(val)
+
+        return order
+
+    def from_list(self, order_list, sort=False):
+        order_list = [Order(order['price'], order['qty'], order['order_type'],
+                            order.get('trader_link')) for order in order_list]
+        if sort:
+            for order in order_list:
+                self.insert(order)
+        else:
+            for order in order_list:
+                self.append(order)
 
 
 class ExchangeAgent:
