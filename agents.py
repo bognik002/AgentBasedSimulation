@@ -1,12 +1,8 @@
 import random
 from tqdm import tqdm
 
-random.seed(1)
-
 
 class Order:
-    order_id = 0
-
     def __init__(self, price, qty, order_type, trader_link=None):
         # Properties
         self.price = price
@@ -17,12 +13,41 @@ class Order:
         self.left = None
         self.right = None
 
-        self.order_id = Order.order_id
-        Order.order_id += 1
+    def __lt__(self, other) -> bool:
+        if self.order_type != other.order_type:
+            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+        if self.order_type == 'bid':
+            return self.price > other.price
+        if self.order_type == 'ask':
+            return self.price < other.price
+
+    def __le__(self, other):
+        if self.order_type != other.order_type:
+            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+        if self.order_type == 'bid':
+            return self.price >= other.price
+        if self.order_type == 'ask':
+            return self.price <= other.price
+
+    def __gt__(self, other):
+        if self.order_type != other.order_type:
+            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+        if self.order_type == 'bid':
+            return self.price < other.price
+        if self.order_type == 'ask':
+            return self.price > other.price
+
+    def __ge__(self, other):
+        if self.order_type != other.order_type:
+            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+        if self.order_type == 'bid':
+            return self.price <= other.price
+        if self.order_type == 'ask':
+            return self.price >= other.price
 
     def to_dict(self) -> dict:
         return {'price': self.price, 'qty': self.qty, 'order_type': self.order_type,
-                'trader_link': self.trader}  # trader.name
+                'trader_link': self.trader}
 
     @classmethod
     def from_dict(cls, order_dict):
@@ -85,6 +110,11 @@ class OrderList:
         self.last = order
 
     def push(self, order: Order):
+        """
+        Insert order in the beginning
+        :param order: Order
+        :return: void
+        """
         # If wrong order type to insert
         if order.order_type != self.order_type:
             raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
@@ -103,52 +133,25 @@ class OrderList:
         if order.order_type != self.order_type:
             raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
 
-        # If empty
-        if not self.first:
-            self.append(order)
+        # Insert order in the beginning
+        if order <= self.first:
+            order.right = self.first
+            self.first.left = order
+            self.first = order
             return
 
-        if self.order_type == 'bid':
-            # Insert order in the beginning
-            if order.price >= self.first.price:
-                order.right = self.first
-                self.first.left = order
-                self.first = order
+        # Insert order in the middle
+        for val in self:
+            if order <= val:
+                # If only 1 order in self
+                if self.first == self.last:
+                    self.push(order)
+
+                order.left = val.left
+                order.right = val
+                order.left.right = order
+                order.right.left = order
                 return
-
-            # Insert order in the middle
-            for val in self:
-                if order.price >= val.price:
-                    # If only 1 order in self
-                    if self.first == self.last:
-                        self.push(order)
-
-                    order.left = val.left
-                    order.right = val
-                    order.left.right = order
-                    order.right.left = order
-                    return
-
-        elif self.order_type == 'ask':
-            for val in self:
-                # Insert order in the beginning
-                if order.price <= self.first.price:
-                    # If only 1 order in self
-                    if self.first == self.last:
-                        self.push(order)
-
-                    order.right = self.first
-                    self.first.left = order
-                    self.first = order
-                    return
-
-                # Insert order in the middle
-                if order.price <= val.price:
-                    order.left = val.left
-                    order.right = val
-                    order.left.right = order
-                    order.right.left = order
-                    return
 
         # Insert to the end
         self.append(order)
@@ -314,6 +317,7 @@ class Trader:
 
     def _cancel_order(self, order: Order):
         self.market.cancel_order(order)
+        self.orders.remove(order)
 
 
 class NoiseAgent(Trader):
@@ -395,8 +399,6 @@ class NoiseAgent(Trader):
         # Limit order
         elif random_state > .50:
             price = self._draw_price(order_type, spread)
-            if price == 204.002356034094:
-                print(1)
             quantity = self._draw_quantity('limit')
             if order_type == 'bid':
                 self._buy_limit(quantity, price)
@@ -408,7 +410,6 @@ class NoiseAgent(Trader):
             if self.orders:
                 order_n = random.randint(0, len(self.orders) - 1)
                 self._cancel_order(self.orders[order_n])
-                del self.orders[order_n]
 
 
 class MarketMaker(Trader):
@@ -439,7 +440,6 @@ class MarketMaker(Trader):
         # Update inventory
         self.inventory += left['bid'] - self._trading_volume['bid']
         self.inventory -= left['ask'] - self._trading_volume['ask']
-        self.orders = list()
 
         self._trading_volume = {'bid': 0, 'ask': 0}  # Update trading volume
 
