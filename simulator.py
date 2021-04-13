@@ -81,7 +81,6 @@ class Simulator:
         plt.xlabel('Iteration')
         plt.ylabel('Price')
         plt.legend()
-        plt.show()
 
     def plot_liquidity(self, lw=1):
         iterations = range(self.iterations)
@@ -89,11 +88,9 @@ class Simulator:
         plt.xlabel('Iteration')
         plt.ylabel('Liquidity')
         plt.plot(iterations, self.liquidity, color='black', lw=lw)
-        plt.show()
 
     def plot_order_book(self):
         self.market.plot_order_book()
-        plt.show()
 
     def plot_memory_usage(self, lw=1):
         iterations = range(self.iterations)
@@ -101,7 +98,6 @@ class Simulator:
         plt.xlabel('Iteration')
         plt.ylabel('N')
         plt.plot(iterations, self.memory_usage, color='black', lw=lw)
-        plt.show()
 
     def plot_market_volume(self, lw=1):
         iterations = range(self.iterations)
@@ -109,7 +105,6 @@ class Simulator:
         plt.xlabel('Iteration')
         plt.ylabel('Quantity')
         plt.plot(iterations, self.market_volume, color='black', lw=lw)
-        plt.show()
 
     def plot_inventory(self, lw=1):
         iterations = range(self.iterations)
@@ -120,4 +115,3 @@ class Simulator:
             plt.plot(iterations, [val['qty'] for val in self.mm_inventory if trader.name == val['name']],
                      lw=lw, label=trader.name)
         plt.legend()
-        plt.show()
