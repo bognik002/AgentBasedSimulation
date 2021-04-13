@@ -5,6 +5,8 @@ random.seed(1)
 
 
 class Order:
+    order_id = 0
+
     def __init__(self, price, qty, order_type, trader_link=None):
         # Properties
         self.price = price
@@ -14,6 +16,9 @@ class Order:
         # Connections
         self.left = None
         self.right = None
+
+        self.order_id = Order.order_id
+        Order.order_id += 1
 
     def to_dict(self) -> dict:
         return {'price': self.price, 'qty': self.qty, 'order_type': self.order_type,
@@ -36,6 +41,7 @@ class OrderIter:
         raise StopIteration
 
 
+# noinspection DuplicatedCode
 class OrderList:
     def __init__(self, order_type: str):
         self.first = None
@@ -78,6 +84,20 @@ class OrderList:
         order.left = self.last
         self.last = order
 
+    def push(self, order: Order):
+        # If wrong order type to insert
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
+
+        if not self.first:
+            self.first = order
+            self.last = order
+            return
+
+        self.first.left = order
+        order.right = self.first
+        self.first = order
+
     def insert(self, order: Order):
         # If wrong order type to insert
         if order.order_type != self.order_type:
@@ -99,15 +119,24 @@ class OrderList:
             # Insert order in the middle
             for val in self:
                 if order.price >= val.price:
+                    # If only 1 order in self
+                    if self.first == self.last:
+                        self.push(order)
+
                     order.left = val.left
                     order.right = val
                     order.left.right = order
                     order.right.left = order
                     return
+
         elif self.order_type == 'ask':
             for val in self:
                 # Insert order in the beginning
                 if order.price <= self.first.price:
+                    # If only 1 order in self
+                    if self.first == self.last:
+                        self.push(order)
+
                     order.right = self.first
                     self.first.left = order
                     self.first = order
@@ -293,7 +322,7 @@ class NoiseAgent(Trader):
     def __init__(self, market: ExchangeAgent, price_std=2, quantity_mean=0, quantity_std=1):
         super().__init__(market)
         self.name = f'NoiseTrader{self.trader_id}'
-        self.trader_id += 1
+        NoiseAgent.trader_id += 1
 
         self.lambda_ = 1 / price_std
         self.mu = quantity_mean
@@ -366,6 +395,8 @@ class NoiseAgent(Trader):
         # Limit order
         elif random_state > .50:
             price = self._draw_price(order_type, spread)
+            if price == 204.002356034094:
+                print(1)
             quantity = self._draw_quantity('limit')
             if order_type == 'bid':
                 self._buy_limit(quantity, price)
@@ -389,6 +420,7 @@ class MarketMaker(Trader):
         """
         super().__init__(market)
         self.name = f'MarketMaker{self.trader_id}'
+        MarketMaker.trader_id += 1
         self.ul = upper_limit  # Upper Limit
         self.ll = lower_limit  # Lower Limit
         self.inventory = inventory

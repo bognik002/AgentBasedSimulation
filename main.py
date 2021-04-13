@@ -7,7 +7,7 @@ market_params = {'price_std': 1, 'quantity_mean': 0, 'quantity_std': 2}
 noise_params = {'price_std': 1, 'quantity_mean': 0, 'quantity_std': 2}
 
 # Initialize Exchange Agent
-exchange = ExchangeAgent(spread_initial, depth=100, **market_params)
+exchange = ExchangeAgent(spread_initial, **market_params)
 
 # Initialize Traders
 noise_traders = [NoiseAgent(exchange, **noise_params) for i in range(1)]
@@ -15,5 +15,4 @@ noise_traders = [NoiseAgent(exchange, **noise_params) for i in range(1)]
 
 # Simulation
 simulator = Simulator(exchange, noise_agents=noise_traders).fit(1000, nt_lag=0, mm_lag=0)
-print(*simulator.market.order_book['bid'].to_list(), sep='\n')
-
+simulator.plot_price()
