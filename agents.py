@@ -1,7 +1,7 @@
 import random
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-from collections import deque
+
+random.seed(1)
 
 
 class Order:
@@ -15,16 +15,20 @@ class Order:
         self.left = None
         self.right = None
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {'price': self.price, 'qty': self.qty, 'order_type': self.order_type,
                 'trader_link': self.trader}  # trader.name
+
+    @classmethod
+    def from_dict(cls, order_dict):
+        return Order(order_dict['price'], order_dict['qty'], order_dict['order_type'], order_dict.get('trader_link'))
 
 
 class OrderIter:
     def __init__(self, order_list):
         self.order = order_list.first
 
-    def __next__(self):
+    def __next__(self) -> Order:
         if self.order:
             next_order = self.order
             self.order = self.order.right
@@ -38,10 +42,13 @@ class OrderList:
         self.last = None
         self.order_type = order_type
 
-    def __iter__(self):
+    def __iter__(self) -> OrderIter:
         return OrderIter(self)
 
-    def to_list(self):
+    def __bool__(self):
+        return self.first is not None and self.last is not None
+
+    def to_list(self) -> list:
         return [order.to_dict() for order in self]
 
     def remove(self, order: Order):
@@ -58,6 +65,10 @@ class OrderList:
             order.right.left = order.left
 
     def append(self, order: Order):
+        # If wrong order type to insert
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
+
         if not self.first:
             self.first = order
             self.last = order
@@ -93,7 +104,7 @@ class OrderList:
                     order.left.right = order
                     order.right.left = order
                     return
-        else:
+        elif self.order_type == 'ask':
             for val in self:
                 # Insert order in the beginning
                 if order.price <= self.first.price:
@@ -131,7 +142,7 @@ class OrderList:
                 if val.qty == 0:
                     self.remove(val)
 
-        else:
+        elif self.order_type == 'ask':
             for val in self:
                 if order.qty == 0:
                     break
@@ -147,316 +158,153 @@ class OrderList:
 
         return order
 
-    def from_list(self, order_list, sort=False):
+    @classmethod
+    def from_list(cls, order_list, sort=False):
         order_list = [Order(order['price'], order['qty'], order['order_type'],
                             order.get('trader_link')) for order in order_list]
+        order_list_obj = OrderList(order_list[0].order_type)
         if sort:
             for order in order_list:
-                self.insert(order)
+                order_list_obj.insert(order)
         else:
             for order in order_list:
-                self.append(order)
+                order_list_obj.append(order)
+        return order_list_obj
 
 
 class ExchangeAgent:
-    def __init__(self, spread_init=None, depth=0, lambda_=2, mu=0, sigma=1):
-        self.order_book = {'bid': deque(), 'ask': deque()}
+    def __init__(self, spread_init, depth=0, price_std=2, quantity_mean=0, quantity_std=1):
+        self.order_book = {'bid': OrderList('bid'), 'ask': OrderList('ask')}
         self.name = 'market'
-        self.inventory = 0
 
         # Initialize spread
         if spread_init:
-            self.order_book['bid'].append({'price': spread_init['bid'], 'qty': 1, 'agent': self})
-            self.order_book['ask'].append({'price': spread_init['ask'], 'qty': 1, 'agent': self})
+            self.order_book['bid'].append(Order.from_dict({'price': spread_init['bid'], 'qty': 1, 'trader_link': self,
+                                                           'order_type': 'bid'}))
+            self.order_book['ask'].append(Order.from_dict({'price': spread_init['ask'], 'qty': 1, 'trader_link': self,
+                                                           'order_type': 'ask'}))
 
         # Add noise limit orders
         for i in tqdm(range(depth), desc='Market Initialization'):
-            delta = random.expovariate(lambda_)
-            quantity = random.lognormvariate(mu, sigma)
+            delta = random.expovariate(1 / price_std)
+            quantity = random.lognormvariate(quantity_mean, quantity_std)
 
-            # BID
-            self.limit_order('bid', quantity, spread_init['bid'] - delta, self)
+            # BID quantity, spread_init['bid'] - delta, self
+            self.limit_order(Order(spread_init['bid'] - delta, quantity, 'bid', self))
             # ASK
-            self.limit_order('ask', quantity, spread_init['ask'] + delta, self)
+            self.limit_order(Order(spread_init['ask'] + delta, quantity, 'ask', self))
 
-    def _clear_glass(self, order_type):
-        if order_type == 'bid':
-            self.order_book['ask'] = deque([order for order in self.order_book['ask'] if order['qty'] > 0])
-        if order_type == 'ask':
-            self.order_book['bid'] = deque([order for order in self.order_book['bid'] if order['qty'] > 0])
+    def _clear_glass(self):
+        self.order_book['bid'] = OrderList.from_list([order for order in self.order_book['bid'] if order.qty > 0])
+        self.order_book['ask'] = OrderList.from_list([order for order in self.order_book['ask'] if order.qty > 0])
 
-    def spread(self):
-        if not self.order_book['bid']:
-            bid = None
-        else:
-            bid = self.order_book['bid'][0]['price']
+    def spread(self) -> dict:
+        if not self.order_book['bid'] or not self.order_book['ask']:
+            return {'bid': None, 'ask': None}
+        return {'bid': self.order_book['bid'].first.price, 'ask': self.order_book['ask'].first.price}
 
-        if not self.order_book['ask']:
-            ask = None
-        else:
-            ask = self.order_book['ask'][0]['price']
+    def spread_volume(self) -> dict:
+        return {'bid': self.order_book['bid'].first.qty, 'ask': self.order_book['ask'].first.qty}
 
-        if bid is None and ask is None:
-            return None
-        return {'bid': bid, 'ask': ask}
-
-    def spread_volume(self):
-        if not self.order_book['bid']:
-            bid = None
-        else:
-            bid = self.order_book['bid'][0]['qty']
-
-        if not self.order_book['ask']:
-            ask = None
-        else:
-            ask = self.order_book['ask'][0]['qty']
-
-        if bid is None and ask is None:
-            return None
-        return {'bid': bid, 'ask': ask}
-
-    def limit_order(self, order_type, quantity, price, trader_link):
+    def limit_order(self, order: Order):
         """
-        Executes limit order.
-
-        If inside spread and spread exist -> add order in the beginning
-
-        For BID:
-        If lower than spread:
-        1) Iterate over BID orders (decreasing) until OUR price is greater than the BID
-
-        If upper than spread:
-        1) Iterate over ASK orders until OUR price is lower than the ASK price
-        or until the order is fulfilled
-        2) If the order is left unfilled, add it in the beginning of the BID list
-        3) clear glass from resolved orders
-
-        For ASK:
-        If upper than spread:
-        1) Iterate over ASK orders (increasing) until OUR price is lower than the ASK
-
-        If lower than spread:
-        1) Iterate over ASK orders until OUR price is lower than the ASK price
-        or until the order is fulfilled
-        2) If the order is left unfilled, add it in the beginning of the ASK list
-        3) clear glass from resolved orders
-
+        Executes limit order, fulfilling orders if on other side of spread
         :return: void
         """
-
-        spread = self.spread()
-        # If glass is empty
-        if spread is None:
-            self.order_book[order_type].append({'price': price, 'qty': quantity, 'agent': trader_link})
+        bid, ask = self.spread().values()
+        if not bid or not ask:
             return
 
-        # If inside spread
-        if spread is not None and spread['bid'] is not None and spread['ask'] is not None:
-            if spread['bid'] < price < spread['ask']:
-                self.order_book[order_type].insert(0, {'price': price, 'qty': quantity, 'agent': trader_link})
-                return
+        if order.order_type == 'bid':
+            if order.price >= ask:
+                order = self.order_book['ask'].fulfill(order)
+            if order.qty > 0:
+                self.order_book['bid'].insert(order)
+            return
 
-        # Raise if spread is negative
-        if spread['bid'] is not None and spread['ask'] is not None:
-            if spread['bid'] >= spread['ask']:
-                raise ValueError('Spread is negative')
+        elif order.order_type == 'ask':
+            if order.price <= bid:
+                order = self.order_book['bid'].fulfill(order)
+            if order.qty > 0:
+                self.order_book['ask'].insert(order)
 
-        # If BID
-        if order_type == 'bid':
-
-            # If BID is empty
-            if spread['bid'] is None and price < spread['ask']:
-                self.order_book['bid'].append({'price': price, 'qty': quantity, 'agent': trader_link})
-                return
-
-            # If in BID side of glass
-            if spread['bid'] is not None and price <= spread['bid']:
-                for i, order in enumerate(self.order_book['bid']):
-                    if price == order['price']:
-                        self.order_book['bid'][i]['qty'] += quantity
-                        return
-                    if price > order['price']:
-                        self.order_book['bid'].insert(i, {'price': price, 'qty': quantity, 'agent': trader_link})
-                        return
-                self.order_book['bid'].append({'price': price, 'qty': quantity, 'agent': trader_link})
-                return
-
-            # If in ASK side of glass
-            if spread['ask'] is None or price >= spread['ask']:
-                for i, order in enumerate(self.order_book['ask']):
-                    if quantity == 0:
-                        break
-                    if price < order['price']:
-                        break
-
-                    tmp = min(quantity, order['qty'])  # Quantity traded currently
-                    self.order_book['ask'][i]['qty'] -= tmp
-                    self.order_book['ask'][i]['agent'].inventory -= tmp  # Decrease inventory of seller
-                    trader_link.inventory += tmp  # Increase inventory of buyer
-                    quantity -= tmp
-
-                if quantity > 0:
-                    self.order_book['bid'].insert(0, {'price': price, 'qty': quantity, 'agent': trader_link})
-                self._clear_glass(order_type)  # Clear glass from resolved orders
-                return
-
-        # If ASK
-        if order_type == 'ask':
-
-            # If ASK is empty
-            if spread['ask'] is None and price > spread['bid']:
-                self.order_book['ask'].append({'price': price, 'qty': quantity, 'agent': trader_link})
-                return
-
-            # If in ASK side of glass
-            if spread['ask'] is not None and price >= spread['ask']:
-                for i, order in enumerate(self.order_book['ask']):
-                    if price == order['price']:
-                        self.order_book['ask'][i]['qty'] += quantity
-                        return
-                    if price < order['price']:
-                        self.order_book['ask'].insert(i, {'price': price, 'qty': quantity, 'agent': trader_link})
-                        return
-                self.order_book['ask'].append({'price': price, 'qty': quantity, 'agent': trader_link})
-                return
-
-            # If in BID side of glass
-            if spread['bid'] is None or price <= spread['bid']:
-                for i, order in enumerate(self.order_book['bid']):
-                    if quantity == 0:
-                        break
-                    if price > order['price']:
-                        break
-
-                    tmp = min(quantity, order['qty'])  # Quantity trader currently
-                    self.order_book['bid'][i]['qty'] -= tmp
-                    self.order_book['bid'][i]['agent'].inventory += tmp  # Increase inventory of buyer
-                    trader_link.inventory -= tmp  # Decrease inventory of seller
-                    quantity -= tmp
-
-                if quantity > 0:
-                    self.order_book['ask'].insert(0, {'price': price, 'qty': quantity, 'agent': trader_link})
-                self._clear_glass(order_type)  # Clear glass from resolved orders
-                return
-
-    def market_order(self, order_type, quantity, trader_link):
+    def market_order(self, order: Order) -> Order:
         """
-        Executes market order
-
-        For BID:
-        1) Iterate through ASK and fulfill orders if OUR quantity is 0 then stop and return TRUE
-        2) If quantity > 0 then return False
-
-        For ASK:
-        1) Iterate through BID and fulfill orders if OUR quantity is 0 then stop and return TRUE
-        2) If quantity > 0 then return False
-
-        :return: qty remaining
+        Executes market order, fulfilling orders on the other side of spread
+        :return: Order
         """
+        if order.order_type == 'bid':
+            order = self.order_book['ask'].fulfill(order)
+        elif order.order_type == 'ask':
+            order = self.order_book['bid'].fulfill(order)
+        return order
 
-        # If BID
-        if order_type == 'bid':
-            for i, order in enumerate(self.order_book['ask']):
-                if quantity == 0:
-                    break
-
-                tmp = min(quantity, order['qty'])  # Quantity trader currently
-                self.order_book['ask'][i]['qty'] -= tmp
-                self.order_book['ask'][i]['agent'].inventory -= tmp  # Decrease inventory of seller
-                trader_link.inventory += tmp  # Increase inventory of buyer
-                quantity -= tmp
-
-            self._clear_glass(order_type)  # Clear glass from resolved orders
-            return quantity
-
-        # If ASK
-        if order_type == 'ask':
-            for i, order in enumerate(self.order_book['bid']):
-                if quantity == 0:
-                    break
-
-                tmp = min(quantity, order['qty'])  # Quantity trader currently
-                self.order_book['bid'][i]['qty'] -= tmp
-                self.order_book['bid'][i]['agent'].inventory += tmp  # Increase inventory of buyer
-                trader_link.inventory -= tmp  # Decrease inventory of seller
-                quantity -= tmp
-
-            self._clear_glass(order_type)  # Clear glass from resolved orders
-            return quantity
-
-    def cancel_order(self, order_type, trader_link):
+    def cancel_order(self, order: Order):
         """
-        Cancel random order from the order_type side of the order book
-
-        :return: bool (True - order removed, False - otherwise)
+        Cancel order from order book
+        :return: void
         """
-        for i, order in enumerate(self.order_book[order_type]):
-            if order['agent'] == trader_link:
-                del self.order_book[order_type][i]
-                return True
-        return False
-
-    def cancel_all(self, order_type, trader_link):
-        if order_type == 'bid':
-            self.order_book['ask'] = deque([order for order in self.order_book['ask']
-                                           if order['agent'].name != trader_link.name])
-        if order_type == 'ask':
-            self.order_book['bid'] = deque([order for order in self.order_book['bid']
-                                           if order['agent'].name != trader_link.name])
-
-    def plot_order_book(self):
-        ax = plt.subplot()
-
-        for order_type in ('bid', 'ask'):
-            qtys = [order['qty'] for order in self.order_book[order_type]]
-            prices = [order['price'] for order in self.order_book[order_type]]
-            color = 'green' if order_type == 'bid' else 'red'
-            ax.scatter(prices, qtys, label=order_type, c=color, s=5)
-
-        ax.vlines(self.spread()['bid'], 0, max(qtys), color='black', ls='--', alpha=.8)
-        ax.vlines(self.spread()['ask'], 0, max(qtys), color='black', ls='--', alpha=.8)
-        ax.legend()
-        ax.set_title('Order Book')
+        if order.order_type == 'bid':
+            self.order_book['bid'].remove(order)
+        elif order.order_type == 'ask':
+            self.order_book['ask'].remove(order)
 
 
 class Trader:
-    def __init__(self, market: ExchangeAgent, agent_id, inventory, agent_name='Undefined'):
+    def __init__(self, market: ExchangeAgent):
         self.market = market
-        self.name = f'{agent_name}{agent_id}'
-        self.inventory = inventory
+        self.orders = list()
 
     def _buy_limit(self, quantity, price):
-        self.market.limit_order('bid', quantity, price, self)
+        order = Order(price, quantity, 'bid', self)
+        self.orders.append(order)
+        self.market.limit_order(order)
 
     def _sell_limit(self, quantity, price):
-        self.market.limit_order('ask', quantity, price, self)
+        order = Order(price, quantity, 'ask', self)
+        self.orders.append(order)
+        self.market.limit_order(order)
 
-    def _buy_market(self, quantity):
-        self.market.market_order('bid', quantity, self)
+    def _buy_market(self, quantity) -> int:
+        """
+        :return: quantity unfulfilled
+        """
+        if not self.market.order_book['ask']:
+            return quantity
+        order = Order(self.market.order_book['ask'].last.price, quantity, 'ask', self)
+        return self.market.market_order(order).qty
 
-    def _sell_market(self, quantity):
-        self.market.market_order('ask', quantity, self)
+    def _sell_market(self, quantity) -> int:
+        """
+        :return: quantity unfulfilled
+        """
+        if not self.market.order_book['bid']:
+            return quantity
+        order = Order(self.market.order_book['bid'].last.price, quantity, 'ask', self)
+        return self.market.market_order(order).qty
 
-    def _cancel_order(self, order_type):
-        self.market.cancel_order(order_type, self)
+    def _cancel_order(self, order: Order):
+        self.market.cancel_order(order)
 
 
 class NoiseAgent(Trader):
-    def __init__(self, market: ExchangeAgent, agent_id, inventory, lambda_=2, mu=0, sigma=1):
-        super().__init__(market, agent_id, inventory, agent_name='NoiseTrader')
-        self.lambda_ = lambda_
-        self.mu = mu
-        self.sigma = sigma
+    trader_id = 0
 
-    def _draw_price(self, order_type, spread, lambda_):
+    def __init__(self, market: ExchangeAgent, price_std=2, quantity_mean=0, quantity_std=1):
+        super().__init__(market)
+        self.name = f'NoiseTrader{self.trader_id}'
+        self.trader_id += 1
+
+        self.lambda_ = 1 / price_std
+        self.mu = quantity_mean
+        self.sigma = quantity_std
+
+    def _draw_price(self, order_type, spread: dict) -> float:
         """
         Draw price for limit order of Noise Agent. The price is calculated as:
         1) 35% - within the spread - uniform distribution
         2) 65% - out of the spread - delta from best price is exponential distribution r.v.
 
-        :param order_type: 'bid' or 'ask'
-        :param spread:
-        :param lambda_: from 0.1 for big markets to 2 for small markets
         :return: price
         """
         random_state = random.random()  # Determines IN spread OR OUT of spread
@@ -467,46 +315,39 @@ class NoiseAgent(Trader):
 
         # Out of spread
         else:
-            delta = random.expovariate(lambda_)
+            delta = random.expovariate(self.lambda_)
             if order_type == 'bid':
                 return spread['bid'] - delta
             if order_type == 'ask':
                 return spread['ask'] + delta
 
-    def _draw_quantity(self, order_type, order_exec, mu, sigma):
+    def _draw_quantity(self, order_exec) -> float:
         """
         Draw quantity for any order of Noise Agent.
         1) If market order - volume is the volume of the best offer
-        2) If limit order - volume is derived from log-normal distrivution
+        2) If limit order - volume is derived from log-normal distribution
 
-        :param order_type: 'bid' or 'ask'
         :param order_exec: 'market' or 'limit'
-        :param mu: parameter of log-normal distribution
-        :param sigma: parameter of log-normal distribution
         :return: quantity for order
         """
-        spread_volume = self.market.spread_volume()
-
         # Market order
         if order_exec == 'market':
-            return random.lognormvariate(mu, sigma)
+            return random.lognormvariate(self.mu, self.sigma)
 
         # Limit order
         if order_exec == 'limit':
-            return random.lognormvariate(mu, sigma)
+            return random.lognormvariate(self.mu, self.sigma)
 
-    def call(self, spread, random_state=None):
+    def call(self, spread: dict):
         """
         Function to call agent action
-        :param spread:
-        :param random_state: random unif (0,1) which prescribes which action to perform
+        :param spread: spread stamp with lag
         :return: void
         """
         if not spread['bid'] or not spread['ask']:
             return
 
-        if random_state is None:
-            random_state = random.random()
+        random_state = random.random()
 
         if random_state > .5:
             order_type = 'bid'
@@ -516,7 +357,7 @@ class NoiseAgent(Trader):
         random_state = random.random()
         # Market order
         if random_state > .85:
-            quantity = self._draw_quantity(order_type, 'market', self.mu, self.sigma)
+            quantity = self._draw_quantity('market')
             if order_type == 'bid':
                 self._buy_market(quantity)
             else:
@@ -524,8 +365,8 @@ class NoiseAgent(Trader):
 
         # Limit order
         elif random_state > .50:
-            price = self._draw_price(order_type, spread, self.lambda_)
-            quantity = self._draw_quantity(order_type, 'limit', self.mu, self.sigma)
+            price = self._draw_price(order_type, spread)
+            quantity = self._draw_quantity('limit')
             if order_type == 'bid':
                 self._buy_limit(quantity, price)
             else:
@@ -533,30 +374,54 @@ class NoiseAgent(Trader):
 
         # Cancellation order
         elif random_state < .5:
-            self._cancel_order(order_type)
+            if self.orders:
+                order_n = random.randint(0, len(self.orders) - 1)
+                self._cancel_order(self.orders[order_n])
+                del self.orders[order_n]
 
 
 class MarketMaker(Trader):
-    def __init__(self, market: ExchangeAgent, agent_id, inventory, ul, ll):
+    trader_id = 0
+
+    def __init__(self, market: ExchangeAgent, inventory: float, upper_limit: float, lower_limit: float):
         """
         self.state in (Active, Panic)
         """
-        super().__init__(market, agent_id, inventory, agent_name='MarketMaker')
-        self.ul = ul  # Upper Limit
-        self.ll = ll  # Lower Limit
-        self.state = None
+        super().__init__(market)
+        self.name = f'MarketMaker{self.trader_id}'
+        self.ul = upper_limit  # Upper Limit
+        self.ll = lower_limit  # Lower Limit
+        self.inventory = inventory
+        self._trading_volume = {'bid': 0, 'ask': 0}
+        self.state = 'Active'
 
-    def call(self, spread):
+    def _cancel_all(self):
+        """
+        Cancel all current orders and changes current inventory
+        :return: void
+        """
+        left = {'bid': 0, 'ask': 0}  # Left unfulfilled
+        for order in self.orders:
+            left[order.order_type] += order.qty
+            self.market.cancel_order(order)
+        # Update inventory
+        self.inventory += left['bid'] - self._trading_volume['bid']
+        self.inventory -= left['ask'] - self._trading_volume['ask']
+        self.orders = list()
+
+        self._trading_volume = {'bid': 0, 'ask': 0}  # Update trading volume
+
+    def call(self, spread: dict):
         if not spread['bid'] or not spread['ask']:
             self.state = 'Panic'
             return
 
         # Clear previous orders
-        self.market.cancel_all('bid', self)
-        self.market.cancel_all('ask', self)
+        self._cancel_all()
 
-        bid_volume = max(0, self.ul - 1 - self.inventory)
-        ask_volume = max(0, self.inventory - self.ll - 1)
+        bid_volume = max(0., self.ul - 1 - self.inventory)
+        ask_volume = max(0., self.inventory - self.ll - 1)
+        self._trading_volume = {'bid': bid_volume, 'ask': ask_volume}
 
         if not bid_volume or not ask_volume:
             self.state = 'Panic'

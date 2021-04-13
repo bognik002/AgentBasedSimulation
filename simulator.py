@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 def liquidity_spread(order_book):
     if not order_book['ask'] or not order_book['bid']:
         return None
-    return order_book['ask'][0]['price'] - order_book['bid'][0]['price']
+    return order_book['ask'].first.price - order_book['bid'].first.price
 
 
 class Simulator:
@@ -14,9 +14,6 @@ class Simulator:
         """
         :param market: ExchangeAgent
         :param noise_agents: NoiseAgent
-
-        spread: list() - [{'bid': ###, 'ask': ###}, ...]
-        memory_usage: len of order book for both sides
         """
 
         # Agents
@@ -31,6 +28,7 @@ class Simulator:
         self.market_volume = list()
         self.liquidity = list()
         self.mm_inventory = list()
+        self.mm_states = list()
 
     def fit(self, n, nt_lag=0, mm_lag=0):
         self.iterations += n
@@ -41,8 +39,9 @@ class Simulator:
             # Call MarketMakers
             if self.market_makers:
                 for trader in self.market_makers:
-                    trader.call(self.spread[max(it - mm_lag, 0)])
                     self.mm_inventory.append({'qty': trader.inventory, 'name': trader.name})
+                    self.mm_states.append({'state': trader.state, 'name': trader.name})
+                    trader.call(self.spread[max(it - mm_lag, 0)])
 
             # Call NoiseAgents
             if self.noise_traders:
@@ -51,9 +50,8 @@ class Simulator:
 
             # Update variables
             self.spread.append(self.market.spread())
-            self.memory_usage.append(len(self.market.order_book['bid']) + len(self.market.order_book['ask']))
-            self.market_volume.append(sum([order['qty'] for order in self.market.order_book['bid']]) +
-                                      sum([order['qty'] for order in self.market.order_book['ask']]))
+            self.market_volume.append(sum([order.qty for order in self.market.order_book['bid']]) +
+                                      sum([order.qty for order in self.market.order_book['ask']]))
             self.liquidity.append(liquidity_spread(self.market.order_book))
 
         return self
@@ -89,10 +87,6 @@ class Simulator:
         plt.xlabel('Iteration')
         plt.ylabel('Liquidity')
         plt.plot(iterations, self.liquidity, color='black', lw=lw)
-        plt.show()
-
-    def plot_order_book(self):
-        self.market.plot_order_book()
         plt.show()
 
     def plot_memory_usage(self, lw=1):
