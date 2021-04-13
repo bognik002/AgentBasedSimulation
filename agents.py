@@ -95,6 +95,12 @@ class OrderList:
         if order.right:
             order.right.left = order.left
 
+        order.left = None
+        order.right = None
+
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
+
     def append(self, order: Order):
         # If wrong order type to insert
         if order.order_type != self.order_type:
@@ -103,11 +109,17 @@ class OrderList:
         if not self.first:
             self.first = order
             self.last = order
+
+            if order.order_type != self.order_type:
+                raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
             return
 
         self.last.right = order
         order.left = self.last
         self.last = order
+
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
 
     def push(self, order: Order):
         """
@@ -122,11 +134,17 @@ class OrderList:
         if not self.first:
             self.first = order
             self.last = order
+
+            if order.order_type != self.order_type:
+                raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
             return
 
         self.first.left = order
         order.right = self.first
         self.first = order
+
+        if order.order_type != self.order_type:
+            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
 
     def insert(self, order: Order):
         # If wrong order type to insert
@@ -138,6 +156,9 @@ class OrderList:
             order.right = self.first
             self.first.left = order
             self.first = order
+
+            if sum(order.left is None for order in self) > 1:
+                raise ValueError('Something went wrong with the order book')
             return
 
         # Insert order in the middle
@@ -151,10 +172,15 @@ class OrderList:
                 order.right = val
                 order.left.right = order
                 order.right.left = order
+
+                if sum(order.left is None for order in self) > 1:
+                    raise ValueError('Something went wrong with the order book')
                 return
 
         # Insert to the end
         self.append(order)
+        if sum(order.left is None for order in self) > 1:
+            raise ValueError('Something went wrong with the order book')
 
     def fulfill(self, order: Order) -> Order:
         if order.order_type == self.order_type:
@@ -357,7 +383,7 @@ class NoiseAgent(Trader):
     def _draw_quantity(self, order_exec) -> float:
         """
         Draw quantity for any order of Noise Agent.
-        1) If market order - volume is the volume of the best offer
+        1) If market order - currently the same as for limit order
         2) If limit order - volume is derived from log-normal distribution
 
         :param order_exec: 'market' or 'limit'
