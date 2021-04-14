@@ -71,6 +71,9 @@ class Order:
         if self.order_type == 'ask':
             return self.price >= other.price
 
+    def __str__(self):
+        return f'Order{self.order_id} {self.order_type}'
+
     def to_dict(self) -> dict:
         return {'price': self.price, 'qty': self.qty, 'order_type': self.order_type,
                 'trader_link': self.trader}
@@ -506,7 +509,7 @@ class MarketMaker(Trader):
         left = {'bid': 0, 'ask': 0}  # Left unfulfilled
         for order in self.orders:
             left[order.order_type] += order.qty
-            self.market.cancel_order(order)
+            self._cancel_order(order)
         # Update inventory
         self.inventory += self._trading_volume['bid'] - left['bid']
         self.inventory -= self._trading_volume['ask'] - left['ask']
@@ -541,5 +544,5 @@ class MarketMaker(Trader):
 
         base_offset = -(spread['ask'] - spread['bid'] - 1) * (self.inventory / self.ul)  # Price offset
 
-        self._buy_limit(bid_volume, spread['bid'] + base_offset)  # BID
+        self._buy_limit(bid_volume, spread['bid'] - base_offset)  # BID
         self._sell_limit(ask_volume, spread['ask'] + base_offset)  # ASK
