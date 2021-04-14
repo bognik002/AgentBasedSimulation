@@ -3,6 +3,12 @@ from tqdm import tqdm
 
 
 class Order:
+    """
+    Order contains all relevant information about order, it can be of two types: bid, ask. Supports binary comparison
+    operations of price among all pairs of order types according to the logic:
+
+    **better-offer < worse-offer**
+    """
     order_id = 0
 
     def __init__(self, price, qty, order_type, trader_link=None):
@@ -19,7 +25,11 @@ class Order:
 
     def __lt__(self, other) -> bool:
         if self.order_type != other.order_type:
-            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+            if self.order_type == 'bid':
+                return self.price > other.price
+            if self.order_type == 'ask':
+                return self.price < other.price
+
         if self.order_type == 'bid':
             return self.price > other.price
         if self.order_type == 'ask':
@@ -27,7 +37,11 @@ class Order:
 
     def __le__(self, other):
         if self.order_type != other.order_type:
-            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+            if self.order_type == 'bid':
+                return self.price >= other.price
+            if self.order_type == 'ask':
+                return self.price <= other.price
+
         if self.order_type == 'bid':
             return self.price >= other.price
         if self.order_type == 'ask':
@@ -35,7 +49,11 @@ class Order:
 
     def __gt__(self, other):
         if self.order_type != other.order_type:
-            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+            if self.order_type == 'bid':
+                return self.price < other.price
+            if self.order_type == 'ask':
+                return self.price > other.price
+
         if self.order_type == 'bid':
             return self.price < other.price
         if self.order_type == 'ask':
@@ -43,7 +61,11 @@ class Order:
 
     def __ge__(self, other):
         if self.order_type != other.order_type:
-            raise ValueError(f'Wrong order type! Self: {self.order_type}, Other: {other.order_type}')
+            if self.order_type == 'bid':
+                return self.price <= other.price
+            if self.order_type == 'ask':
+                return self.price >= other.price
+
         if self.order_type == 'bid':
             return self.price <= other.price
         if self.order_type == 'ask':
@@ -197,7 +219,7 @@ class OrderList:
         for val in self:
             if order.qty == 0:
                 break
-            if val.price > order.price:
+            if val > order:
                 break
 
             tmp = min(order.qty, val.qty)  # Quantity traded currently
@@ -275,6 +297,7 @@ class ExchangeAgent:
     def limit_order(self, order: Order):
         """
         Executes limit order, fulfilling orders if on other side of spread
+
         :return: void
         """
         bid, ask = self.spread().values()
@@ -297,6 +320,7 @@ class ExchangeAgent:
     def market_order(self, order: Order) -> Order:
         """
         Executes market order, fulfilling orders on the other side of spread
+
         :return: Order
         """
         if order.order_type == 'bid':
@@ -308,6 +332,7 @@ class ExchangeAgent:
     def cancel_order(self, order: Order):
         """
         Cancel order from order book
+
         :return: void
         """
         if order.order_type == 'bid':
@@ -320,6 +345,10 @@ class Trader:
     def __init__(self, market: ExchangeAgent):
         self.market = market
         self.orders = list()
+        self.name = 'Undefined'
+
+    def __str__(self) -> str:
+        return self.name
 
     def _buy_limit(self, quantity, price):
         order = Order(price, quantity, 'bid', self)
