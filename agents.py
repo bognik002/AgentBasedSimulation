@@ -3,15 +3,19 @@ from tqdm import tqdm
 
 
 class Order:
+    order_id = 0
+
     def __init__(self, price, qty, order_type, trader_link=None):
         # Properties
         self.price = price
         self.qty = qty
         self.order_type = order_type
         self.trader = trader_link
+        self.order_id = Order.order_id
         # Connections
         self.left = None
         self.right = None
+        Order.order_id += 1
 
     def __lt__(self, other) -> bool:
         if self.order_type != other.order_type:
@@ -55,6 +59,9 @@ class Order:
 
 
 class OrderIter:
+    """
+    Iterator class for OrderList
+    """
     def __init__(self, order_list):
         self.order = order_list.first
 
@@ -68,6 +75,14 @@ class OrderIter:
 
 # noinspection DuplicatedCode
 class OrderList:
+    """
+    OrderList is implemented as a doubly linked list. It preserves the same order type inside,
+    all orders are sorted according to best-offer -> worst-offer dynamically.
+
+    remove, append, push: complexity O(1)
+
+    insert, fulfill (for large qty): complexity O(n)
+    """
     def __init__(self, order_type: str):
         self.first = None
         self.last = None
@@ -98,9 +113,6 @@ class OrderList:
         order.left = None
         order.right = None
 
-        if order.order_type != self.order_type:
-            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
-
     def append(self, order: Order):
         # If wrong order type to insert
         if order.order_type != self.order_type:
@@ -109,21 +121,16 @@ class OrderList:
         if not self.first:
             self.first = order
             self.last = order
-
-            if order.order_type != self.order_type:
-                raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
             return
 
         self.last.right = order
         order.left = self.last
         self.last = order
 
-        if order.order_type != self.order_type:
-            raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
-
     def push(self, order: Order):
         """
         Insert order in the beginning
+
         :param order: Order
         :return: void
         """
@@ -134,9 +141,6 @@ class OrderList:
         if not self.first:
             self.first = order
             self.last = order
-
-            if order.order_type != self.order_type:
-                raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
             return
 
         self.first.left = order
@@ -147,6 +151,12 @@ class OrderList:
             raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
 
     def insert(self, order: Order):
+        """
+        Inserts order preserving best-offer -> worst-offer
+
+        :param order: Order
+        :return: void
+        """
         # If wrong order type to insert
         if order.order_type != self.order_type:
             raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
@@ -156,9 +166,6 @@ class OrderList:
             order.right = self.first
             self.first.left = order
             self.first = order
-
-            if sum(order.left is None for order in self) > 1:
-                raise ValueError('Something went wrong with the order book')
             return
 
         # Insert order in the middle
@@ -172,47 +179,27 @@ class OrderList:
                 order.right = val
                 order.left.right = order
                 order.right.left = order
-
-                if sum(order.left is None for order in self) > 1:
-                    raise ValueError('Something went wrong with the order book')
                 return
 
         # Insert to the end
         self.append(order)
-        if sum(order.left is None for order in self) > 1:
-            raise ValueError('Something went wrong with the order book')
 
     def fulfill(self, order: Order) -> Order:
         if order.order_type == self.order_type:
             raise ValueError(f'Wrong order type! OrderList: {self.order_type}, Order: {order.order_type}')
 
-        if self.order_type == 'bid':
-            for val in self:
-                if order.qty == 0:
-                    break
-                if val.price < order.price:
-                    break
+        for val in self:
+            if order.qty == 0:
+                break
+            if val.price > order.price:
+                break
 
-                tmp = min(order.qty, val.qty)  # Quantity traded currently
-                val.qty -= tmp
-                order.qty -= tmp
+            tmp = min(order.qty, val.qty)  # Quantity traded currently
+            val.qty -= tmp
+            order.qty -= tmp
 
-                if val.qty == 0:
-                    self.remove(val)
-
-        elif self.order_type == 'ask':
-            for val in self:
-                if order.qty == 0:
-                    break
-                if val.price > order.price:
-                    break
-
-                tmp = min(order.qty, val.qty)  # Quantity traded currently
-                val.qty -= tmp
-                order.qty -= tmp
-
-                if val.qty == 0:
-                    self.remove(val)
+            if val.qty == 0:
+                self.remove(val)
 
         return order
 
@@ -231,6 +218,10 @@ class OrderList:
 
 
 class ExchangeAgent:
+    """
+    ExchangeAgent implements automatic orders handling within the order book. It supports limit orders,
+    market orders, cancel orders, returns current spread prices and volumes.
+    """
     def __init__(self, spread_init, depth=0, price_std=2, quantity_mean=0, quantity_std=1):
         self.order_book = {'bid': OrderList('bid'), 'ask': OrderList('ask')}
         self.name = 'market'
@@ -247,21 +238,32 @@ class ExchangeAgent:
             delta = random.expovariate(1 / price_std)
             quantity = random.lognormvariate(quantity_mean, quantity_std)
 
-            # BID quantity, spread_init['bid'] - delta, self
-            self.limit_order(Order(spread_init['bid'] - delta, quantity, 'bid', self))
-            # ASK
-            self.limit_order(Order(spread_init['ask'] + delta, quantity, 'ask', self))
+            self.limit_order(Order(spread_init['bid'] - delta, quantity, 'bid', self))  # BID
+            self.limit_order(Order(spread_init['ask'] + delta, quantity, 'ask', self))  # ASK
 
     def _clear_glass(self):
+        """
+        Clears glass from orders with 0 qty.
+
+        complexity O(n)
+
+        :return: void
+        """
         self.order_book['bid'] = OrderList.from_list([order for order in self.order_book['bid'] if order.qty > 0])
         self.order_book['ask'] = OrderList.from_list([order for order in self.order_book['ask'] if order.qty > 0])
 
     def spread(self) -> dict:
+        """
+        :return: {'bid': float, 'ask': float}
+        """
         if not self.order_book['bid'] or not self.order_book['ask']:
             return {'bid': None, 'ask': None}
         return {'bid': self.order_book['bid'].first.price, 'ask': self.order_book['ask'].first.price}
 
     def spread_volume(self) -> dict:
+        """
+        :return: {'bid': float, 'ask': float}
+        """
         return {'bid': self.order_book['bid'].first.qty, 'ask': self.order_book['ask'].first.qty}
 
     def limit_order(self, order: Order):
@@ -347,6 +349,9 @@ class Trader:
 
 
 class NoiseAgent(Trader):
+    """
+    NoiseTrader perform action on call. Creates noisy orders to recreate trading in real environment.
+    """
     trader_id = 0
 
     def __init__(self, market: ExchangeAgent, price_std=2, quantity_mean=0, quantity_std=1):
@@ -400,7 +405,8 @@ class NoiseAgent(Trader):
     def call(self, spread: dict):
         """
         Function to call agent action
-        :param spread: spread stamp with lag
+
+        :param spread: {'bid': float, 'ask' float} - spread stamp with lag
         :return: void
         """
         if not spread['bid'] or not spread['ask']:
@@ -439,12 +445,14 @@ class NoiseAgent(Trader):
 
 
 class MarketMaker(Trader):
+    """
+    MarketMaker performs action on call. Creates orders on either side of bid-ask spread, each time cancelling
+    orders from previous call. Has inventory, which is recalculated after each trading session, and states
+    (Active, Panic) which are determined by inventory left after trading session.
+    """
     trader_id = 0
 
     def __init__(self, market: ExchangeAgent, inventory: float, upper_limit: float, lower_limit: float):
-        """
-        self.state in (Active, Panic)
-        """
         super().__init__(market)
         self.name = f'MarketMaker{self.trader_id}'
         MarketMaker.trader_id += 1
@@ -456,7 +464,8 @@ class MarketMaker(Trader):
 
     def _cancel_all(self):
         """
-        Cancel all current orders and changes current inventory
+        Clear all previous orders and update inventory
+
         :return: void
         """
         left = {'bid': 0, 'ask': 0}  # Left unfulfilled
@@ -464,12 +473,19 @@ class MarketMaker(Trader):
             left[order.order_type] += order.qty
             self.market.cancel_order(order)
         # Update inventory
-        self.inventory += left['bid'] - self._trading_volume['bid']
-        self.inventory -= left['ask'] - self._trading_volume['ask']
+        self.inventory += self._trading_volume['bid'] - left['bid']
+        self.inventory -= self._trading_volume['ask'] - left['ask']
 
         self._trading_volume = {'bid': 0, 'ask': 0}  # Update trading volume
 
     def call(self, spread: dict):
+        """
+        Function to call MarketMaker action
+
+        :param spread: {'bid': float, 'ask' float} - spread stamp with lag
+        :return: void
+        """
+        # If market run out of orders on either side -> Panic
         if not spread['bid'] or not spread['ask']:
             self.state = 'Panic'
             return
@@ -477,18 +493,18 @@ class MarketMaker(Trader):
         # Clear previous orders
         self._cancel_all()
 
+        # Calculate bid and ask volume
         bid_volume = max(0., self.ul - 1 - self.inventory)
         ask_volume = max(0., self.inventory - self.ll - 1)
-        self._trading_volume = {'bid': bid_volume, 'ask': ask_volume}
+        self._trading_volume = {'bid': bid_volume, 'ask': ask_volume}  # Control how much is being traded
 
+        # If in panic state we only either sell or buy commodities
         if not bid_volume or not ask_volume:
             self.state = 'Panic'
         else:
             self.state = 'Active'
 
-        base_offset = -(spread['ask'] - spread['bid'] - 1) * (self.inventory / self.ul)
+        base_offset = -(spread['ask'] - spread['bid'] - 1) * (self.inventory / self.ul)  # Price offset
 
-        # BID
-        self._buy_limit(bid_volume, spread['bid'] + base_offset)
-        # ASK
-        self._sell_limit(ask_volume, spread['ask'] + base_offset)
+        self._buy_limit(bid_volume, spread['bid'] + base_offset)  # BID
+        self._sell_limit(ask_volume, spread['ask'] + base_offset)  # ASK
