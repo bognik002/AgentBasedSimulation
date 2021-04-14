@@ -8,5 +8,3 @@ of the simulation, remembers all states of market spread and distributes lagged 
 plot all relevant research analytics.
 3. **main.py**  initializaes all traders, initialize market and Simulator class object, runs simulation, plot diagnostic plot and if needed you can access attributes
 of all classes in this file.
-
-Currently I am working in order_list branch, which is now it test version, still having bugs.
