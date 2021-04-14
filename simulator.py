@@ -9,10 +9,6 @@ def liquidity_spread(order_book: dict):
     return order_book['ask'].first.price - order_book['bid'].first.price
 
 
-def orders_quantity(order_book: dict):
-    return sum([order.qty for order in order_book['bid']]) + sum([order.qty for order in order_book['ask']])
-
-
 def inventory_quantity(order_book: dict):
     return sum([order.qty for order in order_book['ask']]) - sum([order.qty for order in order_book['bid']])
 
@@ -51,7 +47,8 @@ class Simulator:
         for it in tqdm(iterations, desc='Simulation'):
             # Update variables
             self.spread.append(self.market.spread())
-            self.market_volume.append({'orders_qty': orders_quantity(self.market.order_book),
+            self.market_volume.append({'bids': len(self.market.order_book['bid']),
+                                       'asks': len(self.market.order_book['ask']),
                                        'inventory': inventory_quantity(self.market.order_book)})
             self.liquidity.append(liquidity_spread(self.market.order_book))
 
@@ -96,10 +93,9 @@ class Simulator:
         plt.title('Market Volume')
         plt.xlabel('Iteration')
         plt.ylabel('Quantity')
-        plt.plot(iterations, [val['inventory'] for val in self.market_volume], color='black', lw=lw,
-                 label='inventory')
-        plt.plot(iterations, [val['orders_qty'] for val in self.market_volume], color='blue', lw=lw,
-                 label='orders')
+        plt.plot(iterations, [val['inventory'] for val in self.market_volume], color='black', lw=lw, label='inventory')
+        plt.plot(iterations, [val['bids'] for val in self.market_volume], color='green', lw=lw, label='bids')
+        plt.plot(iterations, [val['asks'] for val in self.market_volume], color='red', lw=lw, label='asks')
         plt.legend()
         plt.show()
 

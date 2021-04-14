@@ -94,6 +94,12 @@ class OrderList:
     def __bool__(self):
         return self.first is not None and self.last is not None
 
+    def __len__(self):
+        n = 0
+        for order in self:
+            n += 1
+        return n
+
     def to_list(self) -> list:
         return [order.to_dict() for order in self]
 
@@ -331,7 +337,7 @@ class Trader:
         """
         if not self.market.order_book['ask']:
             return quantity
-        order = Order(self.market.order_book['ask'].last.price, quantity, 'ask', self)
+        order = Order(self.market.order_book['ask'].last.price, quantity, 'bid', self)
         return self.market.market_order(order).qty
 
     def _sell_market(self, quantity) -> int:
@@ -425,7 +431,7 @@ class NoiseAgent(Trader):
             quantity = self._draw_quantity('market')
             if order_type == 'bid':
                 self._buy_market(quantity)
-            else:
+            elif order_type == 'ask':
                 self._sell_market(quantity)
 
         # Limit order
@@ -434,7 +440,7 @@ class NoiseAgent(Trader):
             quantity = self._draw_quantity('limit')
             if order_type == 'bid':
                 self._buy_limit(quantity, price)
-            else:
+            elif order_type == 'ask':
                 self._sell_limit(quantity, price)
 
         # Cancellation order
