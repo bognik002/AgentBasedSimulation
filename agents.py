@@ -253,7 +253,7 @@ class ExchangeAgent:
     ExchangeAgent implements automatic orders handling within the order book. It supports limit orders,
     market orders, cancel orders, returns current spread prices and volumes.
     """
-    def __init__(self, spread_init, depth=0, price_std=2, quantity_mean=0, quantity_std=1):
+    def __init__(self, spread_init, depth=0, price_std=3, quantity_mean=0, quantity_std=1):
         self.order_book = {'bid': OrderList('bid'), 'ask': OrderList('ask')}
         self.name = 'market'
 

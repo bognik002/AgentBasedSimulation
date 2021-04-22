@@ -8,5 +8,35 @@ of the simulation, remembers all states of market spread and distributes lagged 
 plot all relevant research analytics.
 3. **main.py**  initializaes all traders, initialize market and Simulator class object, runs simulation, plot diagnostic plot and if needed you can access attributes
 of all classes in this file.
+   
+### Configure Simulation
 
-Currently I am working in order_list branch, which is now it test version, still having bugs.
+```Python
+from agents import ExchangeAgent, NoiseAgent, MarketMaker
+from simulator import Simulator
+
+spread_initial = {'bid': 100, 'ask': 200}
+
+# Initialize Exchange Agent
+exchange = ExchangeAgent(spread_initial, depth=1000)
+
+# Initialize Traders
+noise_agents = [NoiseAgent(exchange) for i in range(100)]
+market_makers = [MarketMaker(exchange, 0, 100, -100)]
+
+# Simulation
+simulator = Simulator(exchange, noise_agents=noise_agents,
+                      market_makers=market_makers).fit(1000, nt_lag=2, mm_lag=2)
+```
+
+### Plot prices
+
+![img.png](img.png)
+
+![img_1.png](img_1.png)
+
+### Analyze Order Book
+![img_2.png](img_2.png)
+
+### Investigate Market Makers inventory
+![img_3.png](img_3.png)
