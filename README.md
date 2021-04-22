@@ -31,12 +31,12 @@ simulator = Simulator(exchange, noise_agents=noise_agents,
 
 ### Plot prices
 
-![img.png](img.png)
+![img.png](pictures/img.png)
 
-![img_1.png](img_1.png)
+![img_1.png](pictures/img_1.png)
 
 ### Analyze Order Book
-![img_2.png](img_2.png)
+![img_2.png](pictures/img_2.png)
 
 ### Investigate Market Makers inventory
-![img_3.png](img_3.png)
+![img_3.png](pictures/img_3.png)
