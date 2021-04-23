@@ -1,6 +1,8 @@
 from agents import ExchangeAgent
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+from collections import Counter
+import pandas as pd
 
 
 def liquidity_spread(order_book: dict):
@@ -21,7 +23,7 @@ def calculate_price(spread: dict):
 
 
 class Simulator:
-    def __init__(self, market: ExchangeAgent, noise_agents=None, market_makers=None):
+    def __init__(self, market: ExchangeAgent, noise_agents=None, market_makers=None, probe_trader=None):
         """
         :param market: ExchangeAgent
         :param noise_agents: NoiseAgent
@@ -31,6 +33,7 @@ class Simulator:
         self.market = market
         self.noise_traders = noise_agents
         self.market_makers = market_makers
+        self.probe_trader = probe_trader
 
         # Data to store
         self.iterations = 0
@@ -51,13 +54,18 @@ class Simulator:
                                        'asks': len(self.market.order_book['ask']),
                                        'inventory': inventory_quantity(self.market.order_book)})
             self.liquidity.append(liquidity_spread(self.market.order_book))
+            self.mm_states.append({'Active': [mm.state for mm in self.market_makers].count('Active'),
+                                   'Panic': [mm.state for mm in self.market_makers].count('Panic')})
 
             # Call MarketMakers
             if self.market_makers:
                 for trader in self.market_makers:
                     self.mm_inventory.append({'qty': trader.inventory, 'name': trader.name})
-                    self.mm_states.append({'state': trader.state, 'name': trader.name})
                     trader.call(self.spread[max(it - mm_lag, 0)])
+
+            # Call ProbeTrader
+            if self.probe_trader:
+                self.probe_trader.call()
 
             # Call NoiseAgents
             if self.noise_traders:
@@ -109,3 +117,15 @@ class Simulator:
                      lw=lw, label=trader.name)
         plt.legend()
         plt.show()
+
+    def plot_states(self, lw=1):
+        iterations = range(self.iterations)
+        plt.plot(iterations, [state['Panic'] for state in self.mm_states], lw=lw, color='black')
+        plt.title('Market Makers States')
+        plt.ylabel('Panic')
+        plt.show()
+
+    def order_book_summary(self):
+        bid = pd.DataFrame([*self.market.order_book['bid'].to_list()])
+        ask = pd.DataFrame([*self.market.order_book['ask'].to_list()])
+        return ['bid', bid.describe().round(2).transpose(), 'ask', ask.describe().round(2).transpose()]

@@ -1,5 +1,12 @@
 import random
 from tqdm import tqdm
+from math import exp, log, sqrt
+
+
+def lognormal_params(mean, std):
+    sigma = sqrt(log(std**2 + 1))
+    mu = log(mean + .001) - log(sigma**2 + 1) / 2
+    return mu, sigma
 
 
 class Order:
@@ -253,7 +260,7 @@ class ExchangeAgent:
     ExchangeAgent implements automatic orders handling within the order book. It supports limit orders,
     market orders, cancel orders, returns current spread prices and volumes.
     """
-    def __init__(self, spread_init, depth=0, price_std=3, quantity_mean=0, quantity_std=1):
+    def __init__(self, spread_init, depth=0, price_std=50, quantity_mean=1, quantity_std=1):
         self.order_book = {'bid': OrderList('bid'), 'ask': OrderList('ask')}
         self.name = 'market'
 
@@ -265,9 +272,10 @@ class ExchangeAgent:
                                                            'order_type': 'ask'}))
 
         # Add noise limit orders
+        mu, sigma = lognormal_params(quantity_mean, quantity_std)
         for i in tqdm(range(depth), desc='Market Initialization'):
+            quantity = random.lognormvariate(mu, sigma)
             delta = random.expovariate(1 / price_std)
-            quantity = random.lognormvariate(quantity_mean, quantity_std)
 
             self.limit_order(Order(spread_init['bid'] - delta, quantity, 'bid', self))  # BID
             self.limit_order(Order(spread_init['ask'] + delta, quantity, 'ask', self))  # ASK
@@ -392,14 +400,13 @@ class NoiseAgent(Trader):
     """
     trader_id = 0
 
-    def __init__(self, market: ExchangeAgent, price_std=2, quantity_mean=0, quantity_std=1):
+    def __init__(self, market: ExchangeAgent, price_std=2, quantity_mean=1, quantity_std=1):
         super().__init__(market)
         self.name = f'NoiseTrader{self.trader_id}'
         NoiseAgent.trader_id += 1
 
         self.lambda_ = 1 / price_std
-        self.mu = quantity_mean
-        self.sigma = quantity_std
+        self.mu, self.sigma = lognormal_params(quantity_mean, quantity_std)
 
     def _draw_price(self, order_type, spread: dict) -> float:
         """
@@ -546,3 +553,21 @@ class MarketMaker(Trader):
 
         self._buy_limit(bid_volume, spread['bid'] - base_offset)  # BID
         self._sell_limit(ask_volume, spread['ask'] + base_offset)  # ASK
+
+
+class ProbeTrader(Trader):
+    def __init__(self, market, side, quantity_mean=2, quantity_std=1):
+        super().__init__(market)
+        self.name = 'ProbeAgent'
+        self.side = side
+        self.mu, self.sigma = lognormal_params(quantity_mean, quantity_std)
+
+    def _draw_quantity(self):
+        return random.lognormvariate(self.mu, self.sigma)
+
+    def call(self):
+        quantity = self._draw_quantity()
+        if self.side == 'bid':
+            self._buy_market(quantity)
+        elif self.side == 'ask':
+            self._sell_market(quantity)
