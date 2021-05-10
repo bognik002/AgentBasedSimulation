@@ -505,7 +505,7 @@ class MarketMaker(Trader):
         self.ll = lower_limit  # Lower Limit
         self.inventory = inventory
         self._trading_volume = {'bid': 0, 'ask': 0}
-        self.state = 'Active'
+        self.state = 'active'
 
     def _cancel_all(self):
         """
@@ -523,16 +523,17 @@ class MarketMaker(Trader):
 
         self._trading_volume = {'bid': 0, 'ask': 0}  # Update trading volume
 
-    def call(self, spread: dict):
+    def call(self, spread: dict, inventory: float):
         """
         Function to call MarketMaker action
 
         :param spread: {'bid': float, 'ask' float} - spread stamp with lag
+        :param inventory: inventory value with lag
         :return: void
         """
         # If market run out of orders on either side -> Panic
         if not spread['bid'] or not spread['ask']:
-            self.state = 'Panic'
+            self.state = 'panic'
             return
 
         # Clear previous orders
@@ -545,9 +546,9 @@ class MarketMaker(Trader):
 
         # If in panic state we only either sell or buy commodities
         if not bid_volume or not ask_volume:
-            self.state = 'Panic'
+            self.state = 'panic'
         else:
-            self.state = 'Active'
+            self.state = 'active'
 
         base_offset = -(spread['ask'] - spread['bid'] - 1) * (self.inventory / self.ul)  # Price offset
 

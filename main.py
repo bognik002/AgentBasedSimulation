@@ -1,4 +1,4 @@
-from agents import ExchangeAgent, NoiseAgent, MarketMaker
+from agents import ExchangeAgent, NoiseAgent, MarketMaker, ProbeTrader
 from simulator import Simulator
 
 spread_initial = {'bid': 100, 'ask': 200}
