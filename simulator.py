@@ -17,6 +17,15 @@ def mean(x: list) -> float:
     return sum(x) / len(x)
 
 
+def diff(x: list) -> list:
+    return [x[i + 1] - x[i] for i in range(len(x) - 1)]
+
+
+def std(x: list) -> float:
+    m = mean(x)
+    return sum([(val - m)**2 for val in x])**0.5 / len(x)
+
+
 class Simulator:
     def __init__(self, market: ExchangeAgent, noise_agents=None, market_makers=None, probe_trader=None):
         """
@@ -59,13 +68,14 @@ class Simulator:
 
     def plot_price(self, show_spread=False, smoothing=False, title='Commodity Price', lw=1):
         if not smoothing:
-            plt.plot(self.info.iterations[10:], self.info.center_price()[10:], color='black', label='mean', lw=lw)
+            plt.plot(self.info.iterations, self.info.center_price(), color='black', label='mean', lw=lw)
+            if show_spread:
+                plt.plot(self.info.iterations, self.info.best_price('bid'), color='green', label='bid', lw=lw)
+                plt.plot(self.info.iterations, self.info.best_price('ask'), color='red', label='ask', lw=lw)
         else:
             plt.plot(self.info.iterations, lowess(self.info.center_price(), self.info.iterations, return_sorted=False),
                      color='black', label='mean', lw=lw)
-        if show_spread:
-            plt.plot(self.info.iterations, self.info.best_price('bid'), color='green', label='bid', lw=lw)
-            plt.plot(self.info.iterations, self.info.best_price('bid'), color='red', label='ask', lw=lw)
+            plt.ylim(min(self.info.center_price()), max(self.info.center_price()))
 
         plt.title(title)
         plt.xlabel('Iteration')
@@ -73,7 +83,7 @@ class Simulator:
         plt.legend()
         plt.show()
 
-    def plot_market_volume(self, lw=1, smoothing=False):
+    def plot_volume(self, lw=1, smoothing=False):
         plt.title('Market Volume')
         plt.xlabel('Iteration')
         plt.ylabel('Quantity')
@@ -102,10 +112,17 @@ class Simulator:
         plt.legend()
         plt.show()
 
-    def plot_states(self, lw=1):
+    def plot_panic(self, lw=1):
         plt.plot(self.info.iterations, self.info.panic_count(), lw=lw, color='black')
         plt.title('Market Makers States')
         plt.ylabel('Panic')
+        plt.show()
+
+    def plot_volatility(self, lw=1):
+        plt.title('Volatility')
+        plt.xlabel('Iteration')
+        plt.ylabel('std')
+        plt.plot(self.info.iterations, self.info.volatility(), lw=lw)
         plt.show()
 
     def test_trend(self, kpss_type='constant'):
@@ -157,7 +174,14 @@ class SimulatorInfo:
             self.states.append(dict(Counter([trader.state for trader in self.market_makers])))
 
     def center_price(self) -> list:
-        return [(spread['ask'] + spread['bid']) / 2 if spread['bid'] and spread['ask'] else 0 for spread in self.spread]
+        bids = self.best_price('bid')
+        asks = self.best_price('ask')
+        return [(bids[i] + asks[i]) / 2 for i in range(len(self.iterations))]
+
+    def spread_size(self) -> list:
+        bids = self.best_price('bid')
+        asks = self.best_price('ask')
+        return [asks[i] - bids[i] for i in range(len(asks))]
 
     def best_price(self, order_type: str) -> list:
         return [spread[order_type] for spread in self.spread]
@@ -177,10 +201,93 @@ class SimulatorInfo:
     def excess_volume(self) -> list:
         ask_volume = [ask['volume'] for ask in self.asks]
         bid_volume = [bid['volume'] for bid in self.bids]
-        result = list()
-        for i in self.iterations:
-            result.append(ask_volume[i] - bid_volume[i])
-        return result
+        return [ask_volume[i] - bid_volume[i] for i in range(len(ask_volume))]
+
+    def price_diff(self) -> list:
+        return diff(self.center_price())
+
+    def volume_diff(self) -> list:
+        return diff(self.excess_volume())
+
+    def volatility(self, n=0) -> list:
+        if not n:
+            n = max(int(len(self.iterations) / 200), 10)
+
+        x = self.center_price()
+        vol = [0]
+        for i in range(1, len(x)):
+            if i - n > 0:
+                vol.append(std(x[max(0, i - n):i]))
+            else:
+                vol.append(0)
+        return vol
+
+    def price_states(self, th: float) -> list:
+        """
+        *States:* increase, decrease, soar, fall
+
+        :param th: threshold for fraction relative to the spread size
+        :return: list of states (iterations - 1)
+        """
+        states = list()
+        size = self.spread_size()
+        price_diff = self.price_diff()
+
+        for i in range(len(price_diff)):
+            if price_diff[i] > 0:
+                if abs(price_diff[i] / size[i]) > th:
+                    states.append('soar')
+                else:
+                    states.append('increase')
+            else:
+                if abs(price_diff[i] / size[i]) > th:
+                    states.append('fall')
+                else:
+                    states.append('decrease')
+        return states
+
+    def volume_states(self, th) -> list:
+        """
+        *States:* increase, decrease, soar, fall
+
+        :param th: threshold for fraction relative to the sum of volume on the opposite side of order book
+        :return: list of states (iterations - 1)
+        """
+        states = list()
+        size_ask = self.sum_volume('ask')
+        size_bid = self.sum_volume('bid')
+        volume_diff = self.volume_diff()
+
+        for i in range(len(volume_diff)):
+            if volume_diff[i] > 0:
+                if abs(volume_diff[i] / size_bid[i]) > th:
+                    states.append('soar')
+                else:
+                    states.append('increase')
+            else:
+                if abs(volume_diff[i] / size_ask[i]) > th:
+                    states.append('fall')
+                else:
+                    states.append('decrease')
+        return states
+
+    def volatility_states(self, th, n=0) -> list:
+        """
+        *States:* volatile, static
+
+        :param th:
+        :param n:
+        :return:
+        """
+        vol = self.volatility()
+        size = self.spread_size()
+        states = list()
+        for i in range(len(vol)):
+            if vol[i] / size[i] > th:
+                states.append('volatile')
+            else:
+                states.append('static')
+        return states
 
     def trader_inventory(self, trader: MarketMaker) -> list:
         return [inventory[trader.name] for inventory in self.inventories]
@@ -253,3 +360,4 @@ class SimulatorInfo:
         bid = pd.DataFrame([*self.market.order_book['bid'].to_list()])
         ask = pd.DataFrame([*self.market.order_book['ask'].to_list()])
         return ['bid', bid.describe().round(2).transpose(), 'ask', ask.describe().round(2).transpose()]
+
