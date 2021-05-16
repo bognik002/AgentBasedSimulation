@@ -1,6 +1,6 @@
 import random
 from tqdm import tqdm
-from math import exp, log, sqrt
+from math import log, sqrt
 
 
 def lognormal_params(mean, std):
@@ -540,8 +540,8 @@ class MarketMaker(Trader):
         self._cancel_all()
 
         # Calculate bid and ask volume
-        bid_volume = max(0., self.ul - 1 - self.inventory)
-        ask_volume = max(0., self.inventory - self.ll - 1)
+        bid_volume = max(0., (self.ul - 1 - inventory) / 2)
+        ask_volume = max(0., (inventory - self.ll - 1) / 2)
         self._trading_volume = {'bid': bid_volume, 'ask': ask_volume}  # Control how much is being traded
 
         # If in panic state we only either sell or buy commodities
@@ -550,7 +550,7 @@ class MarketMaker(Trader):
         else:
             self.state = 'active'
 
-        base_offset = -(spread['ask'] - spread['bid'] - 1) * (self.inventory / self.ul)  # Price offset
+        base_offset = (spread['ask'] - spread['bid']) * (inventory / self.ul)  # Price offset
 
         self._buy_limit(bid_volume, spread['bid'] - base_offset)  # BID
         self._sell_limit(ask_volume, spread['ask'] + base_offset)  # ASK

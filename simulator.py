@@ -280,17 +280,65 @@ class SimulatorInfo:
         :return:
         """
         vol = self.volatility()
-        size = self.spread_size()
         states = list()
         for i in range(len(vol)):
-            if vol[i] / size[i] > th:
+            if vol[i] > th:
                 states.append('volatile')
             else:
                 states.append('static')
         return states
 
+    def market_states(self) -> list:
+        """
+        *States:* dangerous, volatile, shocked, balanced
+
+        :return:
+        """
+        price = self.price_states(.7)
+        volume = self.volume_states(.7)
+        liquid = self.volume_states(.3)
+        states = list()
+
+        for i in range(len(price)):
+            if liquid[i] == 'volatile':
+                if (price[i] == 'soar' or price[i] == 'fall') or (volume[i] == 'soar' or volume[i] == 'fall'):
+                    states.append('dangerous')
+                else:
+                    states.append('volatile')
+            else:
+                if (price[i] == 'soar' or price[i] == 'fall') or (volume[i] == 'soar' or volume[i] == 'fall'):
+                    states.append('shocked')
+                else:
+                    states.append('balanced')
+        return states
+
     def trader_inventory(self, trader: MarketMaker) -> list:
         return [inventory[trader.name] for inventory in self.inventories]
+
+    def trader_states(self) -> list:
+        """
+        *States:* overflow, shortfall, balanced, panic
+
+        :return:
+        """
+        states = list()
+        for i, sample in enumerate(self.inventories):
+            states.append(dict())
+            for trader in self.market_makers:
+                center = (trader.ul + trader.ll) / 2
+                width = (trader.ul - trader.ll) / 2
+                inventory = sample[trader.name]
+
+                if abs(inventory - center) / width < .5:
+                    states[i][trader.name] = 'balanced'
+                elif abs(inventory - center) / width > .8:
+                    states[i][trader.name] = 'panic'
+                else:
+                    if inventory < center:
+                        states[i][trader.name] = 'shortfall'
+                    else:
+                        states[i][trader.name] = 'overflow'
+        return states
 
     def panic_count(self):
         return [state['panic'] if state.get('panic') else 0 for state in self.states]
