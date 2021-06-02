@@ -129,7 +129,7 @@ class Simulator:
     def plot_states_heatmap(self):
         states = self.info.market_states()
         result = dict()
-        for i in range(len(states) - 1):
+        for i in range(1, len(states) - 1):
             p = states[i]
             n = states[i + 1]
             if not result.get(p):
@@ -139,6 +139,8 @@ class Simulator:
             result[p][n] += 1
 
         result = pd.DataFrame(result)
+        result = result.sort_index()
+        result = result[sorted(result.columns)]
         sns.heatmap(result, annot=True)
         plt.show()
 
@@ -327,20 +329,11 @@ class SimulatorInfo:
         """
         price = self.price_states(.7)
         volume = self.volume_states(.7)
-        liquid = self.volume_states(.3)
+        liquid = self.volatility_states(.3)
         states = list()
 
         for i in range(len(price)):
-            if liquid[i] == 'volatile':
-                if (price[i] == 'soar' or price[i] == 'fall') or (volume[i] == 'soar' or volume[i] == 'fall'):
-                    states.append('dangerous')
-                else:
-                    states.append('volatile')
-            else:
-                if (price[i] == 'soar' or price[i] == 'fall') or (volume[i] == 'soar' or volume[i] == 'fall'):
-                    states.append('shocked')
-                else:
-                    states.append('balanced')
+            states.append(' '.join([price[i][0], volume[i][0], liquid[i][:3]]))
         return states
 
     def trader_inventory(self, trader: MarketMaker) -> list:
