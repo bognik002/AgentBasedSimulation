@@ -275,7 +275,7 @@ class ExchangeAgent:
         mu, sigma = lognormal_params(quantity_mean, quantity_std)
         for i in tqdm(range(depth), desc='Market Initialization'):
             quantity = random.lognormvariate(mu, sigma)
-            delta = random.expovariate(1 / price_std)
+            delta = random.expovariate(1 / price_std**.5)
 
             self.limit_order(Order(spread_init['bid'] - delta, quantity, 'bid', self))  # BID
             self.limit_order(Order(spread_init['ask'] + delta, quantity, 'ask', self))  # ASK
@@ -400,12 +400,12 @@ class NoiseAgent(Trader):
     """
     trader_id = 0
 
-    def __init__(self, market: ExchangeAgent, price_std=2, quantity_mean=1, quantity_std=1):
+    def __init__(self, market: ExchangeAgent, price_std=4, quantity_mean=1, quantity_std=1):
         super().__init__(market)
         self.name = f'NoiseTrader{self.trader_id}'
         NoiseAgent.trader_id += 1
 
-        self.lambda_ = 1 / price_std
+        self.lambda_ = 1 / price_std**.5
         self.mu, self.sigma = lognormal_params(quantity_mean, quantity_std)
 
     def _draw_price(self, order_type, spread: dict) -> float:

@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Basic States">
+    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Market States">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/agents.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -162,7 +161,16 @@
       <workItem from="1620649031135" duration="63000" />
       <workItem from="1620835761698" duration="7628000" />
       <workItem from="1621098385413" duration="7497000" />
-      <workItem from="1621152920243" duration="6470000" />
+      <workItem from="1621152920243" duration="6641000" />
+      <workItem from="1621343688347" duration="664000" />
+      <workItem from="1621438754590" duration="2938000" />
+      <workItem from="1621447408709" duration="3701000" />
+      <workItem from="1621512591776" duration="6608000" />
+      <workItem from="1621529894042" duration="2258000" />
+      <workItem from="1622049486757" duration="159000" />
+      <workItem from="1622295957639" duration="12471000" />
+      <workItem from="1622346347469" duration="1665000" />
+      <workItem from="1622643879870" duration="2974000" />
     </task>
     <task id="LOCAL-00001" summary="changed behaviour of noise traders, market no more running out of volume, changed initialization of market makers, no more inventory unused, added market makers states, need to add behavior for it">
       <created>1618224285368</created>
@@ -297,7 +305,14 @@
       <option name="project" value="LOCAL" />
       <updated>1621099962109</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="Market States">
+      <created>1621159459736</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1621159459736</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -334,19 +349,27 @@
     <MESSAGE value="Probe Trader" />
     <MESSAGE value="SimulatorInfo" />
     <MESSAGE value="Basic States" />
-    <option name="LAST_COMMIT_MESSAGE" value="Basic States" />
+    <MESSAGE value="Market States" />
+    <option name="LAST_COMMIT_MESSAGE" value="Market States" />
   </component>
   <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/simulator.py</url>
+          <line>258</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
-        <watch expression="self.market.order_book" language="Python" />
-        <watch expression="spread['bid'] - base_offset" language="Python" />
-        <watch expression="spread['ask'] + base_offset" language="Python" />
+        <watch expression="size" language="Python" />
       </configuration>
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1619102779431" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1621158999344" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1622646604765" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

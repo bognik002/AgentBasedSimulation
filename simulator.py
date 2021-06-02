@@ -5,6 +5,7 @@ from collections import Counter
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 from statsmodels.nonparametric.smoothers_lowess import lowess
 from statsmodels.tsa.stattools import adfuller, kpss
@@ -125,6 +126,22 @@ class Simulator:
         plt.plot(self.info.iterations, self.info.volatility(), lw=lw)
         plt.show()
 
+    def plot_states_heatmap(self):
+        states = self.info.market_states()
+        result = dict()
+        for i in range(len(states) - 1):
+            p = states[i]
+            n = states[i + 1]
+            if not result.get(p):
+                result[p] = dict()
+            if not result[p].get(n):
+                result[p][n] = 0
+            result[p][n] += 1
+
+        result = pd.DataFrame(result)
+        sns.heatmap(result, annot=True)
+        plt.show()
+
     def test_trend(self, kpss_type='constant'):
         fuller = self.info.adfuller_price()
         kpss_inst = self.info.kpss_price(regression=kpss_type)
@@ -222,11 +239,12 @@ class SimulatorInfo:
                 vol.append(0)
         return vol
 
-    def price_states(self, th: float) -> list:
+    def price_states(self, th: float, k=5) -> list:
         """
         *States:* increase, decrease, soar, fall
 
         :param th: threshold for fraction relative to the spread size
+        :param k: number of steps for price
         :return: list of states (iterations - 1)
         """
         states = list()
@@ -234,23 +252,34 @@ class SimulatorInfo:
         price_diff = self.price_diff()
 
         for i in range(len(price_diff)):
+            if i == 0:
+                states.append('undefined')
+                continue
+            price_change = sum(price_diff[max(0, i - k):i])
+            spread = size[0]
+
             if price_diff[i] > 0:
-                if abs(price_diff[i] / size[i]) > th:
+                if spread == 0:
+                    states.append('soar')
+                elif abs(price_change / spread) > th:
                     states.append('soar')
                 else:
                     states.append('increase')
             else:
-                if abs(price_diff[i] / size[i]) > th:
+                if spread == 0:
+                    states.append('fall')
+                elif abs(price_change / spread) > th:
                     states.append('fall')
                 else:
                     states.append('decrease')
         return states
 
-    def volume_states(self, th) -> list:
+    def volume_states(self, th, k=5) -> list:
         """
         *States:* increase, decrease, soar, fall
 
         :param th: threshold for fraction relative to the sum of volume on the opposite side of order book
+        :param k: number of steps for price
         :return: list of states (iterations - 1)
         """
         states = list()
@@ -259,6 +288,8 @@ class SimulatorInfo:
         volume_diff = self.volume_diff()
 
         for i in range(len(volume_diff)):
+            volume_change = sum(volume_diff[max(0, i - k):i])
+
             if volume_diff[i] > 0:
                 if abs(volume_diff[i] / size_bid[i]) > th:
                     states.append('soar')
