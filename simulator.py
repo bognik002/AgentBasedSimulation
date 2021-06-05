@@ -136,7 +136,7 @@ class Simulator:
                  'i i vol', 'i d vol', 'd i vol', 'd d vol']
         states = self.info.market_states()
         table = SimulatorInfo.states_markov(states, order=order)
-        sns.heatmap(table, annot=True, fmt='g', cmap="Blues")
+        sns.heatmap(table, annot=True, fmt='g', cmap="Blues", cbar=False)
         plt.show()
 
     def test_trend(self, kpss_type='constant'):
@@ -225,7 +225,7 @@ class SimulatorInfo:
 
     def volatility(self, n=0) -> list:
         if not n:
-            n = max(int(len(self.iterations) / 200), 10)
+            n = max(int(len(self.iterations) / 100), 10)
 
         x = self.center_price()
         vol = [0]
