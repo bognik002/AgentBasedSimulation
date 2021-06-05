@@ -43,7 +43,7 @@ class Simulator:
         # Info
         self.info = SimulatorInfo(self)
 
-    def fit(self, n, nt_lag=0, mm_lag=0):
+    def fit(self, n, nt_lag=0, mm_lag=0, probe_start=0, probe_stop=None):
         for it in tqdm(range(n), desc='Simulation'):
             # Capture market state
             self.info.capture()
@@ -63,7 +63,12 @@ class Simulator:
 
             # Call ProbeTrader
             if self.probe_trader:
-                self.probe_trader.call()
+                if probe_stop:
+                    if probe_start <= it <= probe_stop:
+                        self.probe_trader.call()
+                else:
+                    if it > probe_start:
+                        self.probe_trader.call()
 
         return self
 
@@ -336,6 +341,23 @@ class SimulatorInfo:
             states.append(' '.join([price[i][0], volume[i][0], liquid[i][:3]]))
         return states
 
+    @classmethod
+    def states_markov(cls, states: list):
+        result = dict()
+        for i in range(1, len(states) - 1):
+            p = states[i]
+            n = states[i + 1]
+            if not result.get(p):
+                result[p] = dict()
+            if not result[p].get(n):
+                result[p][n] = 0
+            result[p][n] += 1
+
+        result = pd.DataFrame(result)
+        result = result.sort_index()
+        result = result[sorted(result.columns)]
+        return result
+
     def trader_inventory(self, trader: MarketMaker) -> list:
         return [inventory[trader.name] for inventory in self.inventories]
 
@@ -429,7 +451,4 @@ class SimulatorInfo:
         return {'params': params, 't': ts_b, 'sd': sd_b, 'p-value': p_values}
 
     def order_book_summary(self, order_type: str):
-        bid = pd.DataFrame([*self.market.order_book['bid'].to_list()])
-        ask = pd.DataFrame([*self.market.order_book['ask'].to_list()])
-        return ['bid', bid.describe().round(2).transpose(), 'ask', ask.describe().round(2).transpose()]
-
+        return pd.DataFrame([*self.market.order_book[order_type].to_list()]).describe().round(2).transpose()

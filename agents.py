@@ -5,7 +5,7 @@ from math import log, sqrt
 
 def lognormal_params(mean, std):
     sigma = sqrt(log(std**2 + 1))
-    mu = log(mean + .001) - log(sigma**2 + 1) / 2
+    mu = log(mean + .000001) - sigma**2 / 2
     return mu, sigma
 
 
@@ -273,9 +273,9 @@ class ExchangeAgent:
 
         # Add noise limit orders
         mu, sigma = lognormal_params(quantity_mean, quantity_std)
-        for i in tqdm(range(depth), desc='Market Initialization'):
+        for i in tqdm(range(max(0, depth - 1)), desc='Market Initialization'):
             quantity = random.lognormvariate(mu, sigma)
-            delta = random.expovariate(1 / price_std**.5)
+            delta = random.expovariate(1 / price_std)
 
             self.limit_order(Order(spread_init['bid'] - delta, quantity, 'bid', self))  # BID
             self.limit_order(Order(spread_init['ask'] + delta, quantity, 'ask', self))  # ASK
@@ -405,7 +405,7 @@ class NoiseAgent(Trader):
         self.name = f'NoiseTrader{self.trader_id}'
         NoiseAgent.trader_id += 1
 
-        self.lambda_ = 1 / price_std**.5
+        self.lambda_ = 1 / price_std
         self.mu, self.sigma = lognormal_params(quantity_mean, quantity_std)
 
     def _draw_price(self, order_type, spread: dict) -> float:

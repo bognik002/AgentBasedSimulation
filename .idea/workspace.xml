@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Heatmap">
+    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Heatmap++">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/agents.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator.py" afterDir="false" />
     </list>
@@ -68,7 +69,7 @@
       <recent name="C:\Users\bogni\Financial Liquidity Forecasting\AgentBasedModel\pictures" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.test">
+  <component name="RunManager" selected="Python.main">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Agend Based Simulation" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -115,8 +116,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.test" />
         <item itemvalue="Python.main" />
+        <item itemvalue="Python.test" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.test" />
@@ -170,7 +171,10 @@
       <workItem from="1622049486757" duration="159000" />
       <workItem from="1622295957639" duration="12471000" />
       <workItem from="1622346347469" duration="1665000" />
-      <workItem from="1622643879870" duration="4679000" />
+      <workItem from="1622643879870" duration="5215000" />
+      <workItem from="1622656544199" duration="2666000" />
+      <workItem from="1622763993270" duration="5067000" />
+      <workItem from="1622903620042" duration="2342000" />
     </task>
     <task id="LOCAL-00001" summary="changed behaviour of noise traders, market no more running out of volume, changed initialization of market makers, no more inventory unused, added market makers states, need to add behavior for it">
       <created>1618224285368</created>
@@ -319,7 +323,14 @@
       <option name="project" value="LOCAL" />
       <updated>1622646888541</updated>
     </task>
-    <option name="localTasksCounter" value="22" />
+    <task id="LOCAL-00022" summary="Heatmap++">
+      <created>1622648605870</created>
+      <option name="number" value="00022" />
+      <option name="presentableId" value="LOCAL-00022" />
+      <option name="project" value="LOCAL" />
+      <updated>1622648605870</updated>
+    </task>
+    <option name="localTasksCounter" value="23" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -358,14 +369,15 @@
     <MESSAGE value="Basic States" />
     <MESSAGE value="Market States" />
     <MESSAGE value="Heatmap" />
-    <option name="LAST_COMMIT_MESSAGE" value="Heatmap" />
+    <MESSAGE value="Heatmap++" />
+    <option name="LAST_COMMIT_MESSAGE" value="Heatmap++" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simulator.py</url>
-          <line>260</line>
+          <line>265</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
@@ -377,7 +389,7 @@
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1619102779431" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1622648211337" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1622766655905" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1622657186302" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
