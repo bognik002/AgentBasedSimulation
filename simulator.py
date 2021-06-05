@@ -132,21 +132,11 @@ class Simulator:
         plt.show()
 
     def plot_states_heatmap(self):
+        order = ['i i sta', 'i d sta', 'd i sta', 'd d sta',
+                 'i i vol', 'i d vol', 'd i vol', 'd d vol']
         states = self.info.market_states()
-        result = dict()
-        for i in range(1, len(states) - 1):
-            p = states[i]
-            n = states[i + 1]
-            if not result.get(p):
-                result[p] = dict()
-            if not result[p].get(n):
-                result[p][n] = 0
-            result[p][n] += 1
-
-        result = pd.DataFrame(result)
-        result = result.sort_index()
-        result = result[sorted(result.columns)]
-        sns.heatmap(result, annot=True)
+        table = SimulatorInfo.states_markov(states, order=order)
+        sns.heatmap(table, annot=True, fmt='g', cmap="Blues")
         plt.show()
 
     def test_trend(self, kpss_type='constant'):
@@ -342,7 +332,7 @@ class SimulatorInfo:
         return states
 
     @classmethod
-    def states_markov(cls, states: list):
+    def states_markov(cls, states: list, order=None):
         result = dict()
         for i in range(1, len(states) - 1):
             p = states[i]
@@ -353,9 +343,12 @@ class SimulatorInfo:
                 result[p][n] = 0
             result[p][n] += 1
 
-        result = pd.DataFrame(result)
-        result = result.sort_index()
-        result = result[sorted(result.columns)]
+        if not order:
+            result = pd.DataFrame(result)
+            result = result.sort_index()
+            result = result[sorted(result.columns)]
+        else:
+            result = pd.DataFrame(result, columns=order, index=order).fillna(0)
         return result
 
     def trader_inventory(self, trader: MarketMaker) -> list:

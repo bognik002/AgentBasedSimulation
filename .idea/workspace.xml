@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Heatmap++">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/agents.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator.py" afterDir="false" />
     </list>
@@ -174,7 +173,7 @@
       <workItem from="1622643879870" duration="5215000" />
       <workItem from="1622656544199" duration="2666000" />
       <workItem from="1622763993270" duration="5067000" />
-      <workItem from="1622903620042" duration="2342000" />
+      <workItem from="1622903620042" duration="3279000" />
     </task>
     <task id="LOCAL-00001" summary="changed behaviour of noise traders, market no more running out of volume, changed initialization of market makers, no more inventory unused, added market makers states, need to add behavior for it">
       <created>1618224285368</created>
@@ -330,7 +329,14 @@
       <option name="project" value="LOCAL" />
       <updated>1622648605870</updated>
     </task>
-    <option name="localTasksCounter" value="23" />
+    <task id="LOCAL-00023" summary="Heatmap++">
+      <created>1622915147110</created>
+      <option name="number" value="00023" />
+      <option name="presentableId" value="LOCAL-00023" />
+      <option name="project" value="LOCAL" />
+      <updated>1622915147110</updated>
+    </task>
+    <option name="localTasksCounter" value="24" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -377,7 +383,7 @@
       <breakpoints>
         <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
           <url>file://$PROJECT_DIR$/simulator.py</url>
-          <line>265</line>
+          <line>255</line>
           <option name="timeStamp" value="2" />
         </line-breakpoint>
       </breakpoints>
@@ -389,7 +395,7 @@
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1622766655905" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1622916033198" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1622657186302" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>

@@ -14,5 +14,5 @@ probe_trader = ProbeTrader(exchange, 'ask', quantity_mean=6)
 
 # Simulation
 simulator = Simulator(exchange, noise_agents=noise_agents, market_makers=market_makers,
-                      probe_trader=None).fit(500)
-
+                      probe_trader=None).fit(1000)
+simulator.plot_states_heatmap()
