@@ -168,38 +168,34 @@ class SimulatorInfo:
 
     # Market statistics
     # Numerical
-    def center_price(self) -> list:
-        bids = self.best_price('bid')
-        asks = self.best_price('ask')
-        return [(bids[i] + asks[i]) / 2 for i in range(len(self.iterations))]
+    def center_price(self) -> np.ndarray:
+        return (self.best_price('bid') + self.best_price('ask')) / 2
 
-    def spread_size(self) -> list:
-        bids = self.best_price('bid')
-        asks = self.best_price('ask')
-        return [asks[i] - bids[i] for i in range(len(asks))]
+    def spread_size(self) -> np.ndarray:
+        return self.best_price('ask') - self.best_price('bid')
 
-    def best_price(self, order_type: str) -> list:
-        return [spread[order_type] for spread in self.spread]
+    def best_price(self, order_type: str) -> np.ndarray:
+        return np.array([spread[order_type] for spread in self.spread])
 
-    def sum_quantity(self, order_type: str) -> list:
+    def sum_quantity(self, order_type: str) -> np.ndarray:
         if order_type == 'bid':
-            return [val['qty'] for val in self.bids]
+            return np.ndarray([val['qty'] for val in self.bids])
         if order_type == 'ask':
-            return [val['qty'] for val in self.asks]
+            return np.ndarray([val['qty'] for val in self.asks])
 
-    def sum_volume(self, order_type: str) -> list:
+    def sum_volume(self, order_type: str) -> np.ndarray:
         if order_type == 'bid':
-            return [val['volume'] for val in self.bids]
+            return np.array([val['volume'] for val in self.bids])
         if order_type == 'ask':
-            return [val['volume'] for val in self.asks]
+            return np.array([val['volume'] for val in self.asks])
 
-    def excess_volume(self) -> list:
-        ask_volume = [ask['volume'] for ask in self.asks]
-        bid_volume = [bid['volume'] for bid in self.bids]
-        return [ask_volume[i] - bid_volume[i] for i in range(len(ask_volume))]
+    def excess_volume(self) -> np.ndarray:
+        ask_volume = np.array([ask['volume'] for ask in self.asks])
+        bid_volume = np.array([bid['volume'] for bid in self.bids])
+        return ask_volume - bid_volume
 
-    def price_diff(self) -> list:
-        return diff(self.center_price())
+    def price_diff(self) -> np.ndarray:
+        return self.center_price().diff()
 
     def volume_diff(self) -> list:
         return diff(self.excess_volume())
