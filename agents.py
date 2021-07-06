@@ -5,7 +5,7 @@ from math import log, sqrt
 
 def lognormal_params(mean, std):
     sigma = sqrt(log(std**2 + 1))
-    mu = log(mean + .000001) - sigma**2 / 2
+    mu = round(log(mean + .000001) - sigma**2 / 2, 4)
     return mu, sigma
 
 

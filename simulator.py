@@ -8,10 +8,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 from statsmodels.nonparametric.smoothers_lowess import lowess
-from statsmodels.tsa.stattools import adfuller, kpss
-from scipy import stats
-from sklearn.linear_model import LinearRegression
-import pymannkendall as mk
 
 
 def mean(x: list) -> float:
@@ -139,23 +135,6 @@ class Simulator:
         sns.heatmap(table, annot=True, fmt='g', cmap="Blues", cbar=False)
         plt.show()
 
-    def test_trend(self, kpss_type='constant'):
-        fuller = self.info.adfuller_price()
-        kpss_inst = self.info.kpss_price(regression=kpss_type)
-
-        print('Results of Dickey-Fuller Test:')
-        dfoutput = pd.Series(fuller[0:4],
-                             index=['Test Statistic', 'p-value', '#Lags Used', 'Number of Observations Used'])
-        for key, value in fuller[4].items():
-            dfoutput['Critical Value (%s)' % key] = value
-        print(dfoutput)
-
-        print('KPSS test:')
-        kpss_output = pd.Series(kpss_inst[0:3], index=['Test Statistic', 'p-value', 'Lags Used'])
-        for key, value in kpss_inst[3].items():
-            kpss_output['Critical Value (%s)' % key] = value
-        print(kpss_output)
-
 
 class SimulatorInfo:
     def __init__(self, simulator: Simulator):
@@ -187,6 +166,8 @@ class SimulatorInfo:
             self.inventories.append({trader.name: trader.inventory for trader in self.market_makers})
             self.states.append(dict(Counter([trader.state for trader in self.market_makers])))
 
+    # Market statistics
+    # Numerical
     def center_price(self) -> list:
         bids = self.best_price('bid')
         asks = self.best_price('ask')
@@ -236,6 +217,8 @@ class SimulatorInfo:
                 vol.append(0)
         return vol
 
+    # Market statistics
+    # Categorical
     def price_states(self, th: float, k=5) -> list:
         """
         *States:* increase, decrease, soar, fall
@@ -302,10 +285,6 @@ class SimulatorInfo:
     def volatility_states(self, th, n=0) -> list:
         """
         *States:* volatile, static
-
-        :param th:
-        :param n:
-        :return:
         """
         vol = self.volatility()
         states = list()
@@ -318,9 +297,7 @@ class SimulatorInfo:
 
     def market_states(self) -> list:
         """
-        *States:* dangerous, volatile, shocked, balanced
-
-        :return:
+        *States:* price, volume - increasing or decreasing; volatility - volatile or stable
         """
         price = self.price_states(.7)
         volume = self.volume_states(.7)
@@ -333,6 +310,13 @@ class SimulatorInfo:
 
     @classmethod
     def states_markov(cls, states: list, order=None):
+        """
+        Turns list of records states for each iteration to the transition matrix between these states
+
+        :param states: list of states records
+        :param order: list of unique states by order
+        :return: pandas.DataFrame of states transition matrix
+        """
         result = dict()
         for i in range(1, len(states) - 1):
             p = states[i]
@@ -351,6 +335,7 @@ class SimulatorInfo:
             result = pd.DataFrame(result, columns=order, index=order).fillna(0)
         return result
 
+    # Traders statistics
     def trader_inventory(self, trader: MarketMaker) -> list:
         return [inventory[trader.name] for inventory in self.inventories]
 
@@ -381,67 +366,6 @@ class SimulatorInfo:
 
     def panic_count(self):
         return [state['panic'] if state.get('panic') else 0 for state in self.states]
-
-    def adfuller_price(self, metric='AIC') -> adfuller:
-        """
-        The Augmented Dickey-Fuller test can be used to test for a unit root in a univariate process in the
-        presence of serial correlation. H0 - non-stationary, H1 - stationary
-
-        :param metric: {“AIC”, “BIC”, “t-stat”, None}
-        :return: statistic, p-value, lags, nobs, critical values
-        """
-        return adfuller(self.center_price(), autolag=metric)
-
-    def kpss_price(self, regression='constant', lags='auto') -> kpss:
-        """
-        Computes the Kwiatkowski-Phillips-Schmidt-Shin (KPSS) test for the null hypothesis that x is level or trend
-        stationary. H0 - trend is stationary, H1 - trend is non-stationary
-
-        :param regression: const - the data is stationary around a constant, trend - the data is stationary around the
-        trend
-        :param lags
-        """
-        regression = {'constant': 'c', 'trend': 'ct'}[regression]
-        return kpss(self.center_price(), regression=regression, nlags=lags)
-
-    def mann_kendall_price(self):
-        """
-        The Mann Kendall Trend Test (sometimes called the M-K test) is used to analyze data collected over time for
-        consistently increasing or decreasing trends (monotonic) in Y values. H0 - there is no monotonic trend,
-        H1 - the trend exists, it is either positive or negative
-
-        :return: trend: trend direction, h: bool if trend exists, p: p-value, z: z-stat, Tau: Kendall Tau,
-        s: Mann-Kendal’s score, var_s: Variance S, slope: Theil-Sen estimator/slope,
-        intercept: Intercept of Kendall-Theil Robust Line
-        """
-        return mk.original_test(self.center_price())
-
-    def t_test_price(self):
-        x = np.array(self.iterations).reshape(-1, 1)
-        y = np.array(self.center_price()).reshape(-1, 1)
-
-        lm = LinearRegression().fit(x, y)
-        params = np.append(lm.intercept_, lm.coef_)
-        predictions = lm.predict(x)
-
-        newX = pd.DataFrame({"Constant": np.ones(len(x))}).join(pd.DataFrame(x))
-        MSE = (sum((y - predictions) ** 2)) / (len(newX) - len(newX.columns))
-
-        # Note if you don't want to use a DataFrame replace the two lines above with
-        # newX = np.append(np.ones((len(X),1)), X, axis=1)
-        # MSE = (sum((y-predictions)**2))/(len(newX)-len(newX[0]))
-
-        var_b = MSE * (np.linalg.inv(np.dot(newX.T, newX)).diagonal())
-        sd_b = np.sqrt(var_b)
-        ts_b = params / sd_b
-
-        p_values = [2 * (1 - stats.t.cdf(np.abs(i), (len(newX) - len(newX[0])))) for i in ts_b]
-
-        sd_b = np.round(sd_b, 3)
-        ts_b = np.round(ts_b, 3)
-        p_values = np.round(p_values, 3)
-        params = np.round(params, 4)
-        return {'params': params, 't': ts_b, 'sd': sd_b, 'p-value': p_values}
 
     def order_book_summary(self, order_type: str):
         return pd.DataFrame([*self.market.order_book[order_type].to_list()]).describe().round(2).transpose()

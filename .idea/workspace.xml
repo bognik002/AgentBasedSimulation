@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Heatmap colors">
+    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Final version">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/agents.py" beforeDir="false" afterPath="$PROJECT_DIR$/agents.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -56,6 +57,7 @@
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
     <property name="node.js.detected.package.tslint" value="true" />
     <property name="node.js.selected.package.eslint" value="(autodetect)" />
@@ -172,7 +174,8 @@
       <workItem from="1622643879870" duration="5215000" />
       <workItem from="1622656544199" duration="2666000" />
       <workItem from="1622763993270" duration="5067000" />
-      <workItem from="1622903620042" duration="6026000" />
+      <workItem from="1622903620042" duration="6469000" />
+      <workItem from="1625605500042" duration="1855000" />
     </task>
     <task id="LOCAL-00001" summary="changed behaviour of noise traders, market no more running out of volume, changed initialization of market makers, no more inventory unused, added market makers states, need to add behavior for it">
       <created>1618224285368</created>
@@ -342,7 +345,14 @@
       <option name="project" value="LOCAL" />
       <updated>1622916088086</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="Final version">
+      <created>1622925068780</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1622925068780</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -373,7 +383,6 @@
     <MESSAGE value="Volume of asks drops down" />
     <MESSAGE value="Added pictures" />
     <MESSAGE value="Solved problem with ask orders leakage!&#10;Powered Orders with multiclass comparison" />
-    <MESSAGE value="Final version" />
     <MESSAGE value="Completed switch to OrderList" />
     <MESSAGE value="Base Point" />
     <MESSAGE value="Probe Trader" />
@@ -383,18 +392,10 @@
     <MESSAGE value="Heatmap" />
     <MESSAGE value="Heatmap++" />
     <MESSAGE value="Heatmap colors" />
-    <option name="LAST_COMMIT_MESSAGE" value="Heatmap colors" />
+    <MESSAGE value="Final version" />
+    <option name="LAST_COMMIT_MESSAGE" value="Final version" />
   </component>
   <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
-          <url>file://$PROJECT_DIR$/simulator.py</url>
-          <line>255</line>
-          <option name="timeStamp" value="2" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
         <watch expression="size" language="Python" />
