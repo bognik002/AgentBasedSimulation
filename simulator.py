@@ -10,19 +10,6 @@ import seaborn as sns
 from statsmodels.nonparametric.smoothers_lowess import lowess
 
 
-def mean(x: list) -> float:
-    return sum(x) / len(x)
-
-
-def diff(x: list) -> list:
-    return [x[i + 1] - x[i] for i in range(len(x) - 1)]
-
-
-def std(x: list) -> float:
-    m = mean(x)
-    return sum([(val - m)**2 for val in x])**0.5 / len(x)
-
-
 class Simulator:
     def __init__(self, market: ExchangeAgent, noise_agents=None, market_makers=None, probe_trader=None):
         """
@@ -68,6 +55,7 @@ class Simulator:
 
         return self
 
+    # Visuals
     def plot_price(self, show_spread=False, smoothing=False, title='Commodity Price', lw=1):
         if not smoothing:
             plt.plot(self.info.iterations, self.info.center_price(), color='black', label='mean', lw=lw)
@@ -135,6 +123,19 @@ class Simulator:
         sns.heatmap(table, annot=True, fmt='g', cmap="Blues", cbar=False)
         plt.show()
 
+    # Tables
+    def market_states(self):
+        recordings = {
+            'price': self.info.center_price().round(2)[:-1],
+            'volume': self.info.excess_volume().round(2)[:-1],
+            'B_price': self.info.price_states(),
+            #'B_volume': self.info.volume_states(.3),
+            #'B_vol': self.info.volatility_states(.3)
+        }
+        table = pd.DataFrame(recordings)
+        table.index.name = 'iter'
+        return table
+
 
 class SimulatorInfo:
     def __init__(self, simulator: Simulator):
@@ -195,114 +196,63 @@ class SimulatorInfo:
         return ask_volume - bid_volume
 
     def price_diff(self) -> np.ndarray:
-        return self.center_price().diff()
+        return self.center_price()[1:] - self.center_price()[:-1]
 
-    def volume_diff(self) -> list:
-        return diff(self.excess_volume())
+    def volume_diff(self) -> np.ndarray:
+        return self.excess_volume()[1:] - self.excess_volume()[:-1]
 
-    def volatility(self, n=0) -> list:
-        if not n:
-            n = max(int(len(self.iterations) / 100), 10)
-
-        x = self.center_price()
-        vol = [0]
-        for i in range(1, len(x)):
-            if i - n > 0:
-                vol.append(std(x[max(0, i - n):i]))
-            else:
-                vol.append(0)
-        return vol
+    def volatility(self, n=10) -> np.ndarray:
+        price = self.center_price()
+        return np.array([np.roll(price, -i)[:n].std() for i in range(price.shape[0])])
 
     # Market statistics
     # Categorical
-    def price_states(self, th: float, k=5) -> list:
+    def price_states(self, k=10) -> np.ndarray:
         """
-        *States:* increase, decrease, soar, fall
+        *States:* increase (True), decrease (False)
 
-        :param th: threshold for fraction relative to the spread size
-        :param k: number of steps for price
-        :return: list of states (iterations - 1)
+        :param k: window size
+        :return: list: [bool], True - increase, False - decrease
         """
-        states = list()
-        size = self.spread_size()
         price_diff = self.price_diff()
+        return np.array([np.roll(price_diff, -i)[:k].sum() > 0 for i in range(price_diff.shape[0])])
 
-        for i in range(len(price_diff)):
-            if i == 0:
-                states.append('undefined')
-                continue
-            price_change = sum(price_diff[max(0, i - k):i])
-            spread = size[0]
-
-            if price_diff[i] > 0:
-                if spread == 0:
-                    states.append('soar')
-                elif abs(price_change / spread) > th:
-                    states.append('soar')
-                else:
-                    states.append('increase')
-            else:
-                if spread == 0:
-                    states.append('fall')
-                elif abs(price_change / spread) > th:
-                    states.append('fall')
-                else:
-                    states.append('decrease')
-        return states
-
-    def volume_states(self, th, k=5) -> list:
+    def volume_states(self, k=10) -> np.ndarray:
         """
-        *States:* increase, decrease, soar, fall
+        *States:* increase (True), decrease (False)
 
-        :param th: threshold for fraction relative to the sum of volume on the opposite side of order book
-        :param k: number of steps for price
-        :return: list of states (iterations - 1)
+        :param k: window size
+        :return: list: [bool], True - increase, False - decrease
         """
-        states = list()
-        size_ask = self.sum_volume('ask')
-        size_bid = self.sum_volume('bid')
         volume_diff = self.volume_diff()
+        return np.array([np.roll(volume_diff, -i)[:k].sum() > 0 for i in range(volume_diff.shape[0])])
 
-        for i in range(len(volume_diff)):
-            volume_change = sum(volume_diff[max(0, i - k):i])
-
-            if volume_diff[i] > 0:
-                if abs(volume_diff[i] / size_bid[i]) > th:
-                    states.append('soar')
-                else:
-                    states.append('increase')
-            else:
-                if abs(volume_diff[i] / size_ask[i]) > th:
-                    states.append('fall')
-                else:
-                    states.append('decrease')
-        return states
-
-    def volatility_states(self, th, n=0) -> list:
+    def volatility_states(self, k=10) -> np.ndarray:
         """
-        *States:* volatile, static
-        """
-        vol = self.volatility()
-        states = list()
-        for i in range(len(vol)):
-            if vol[i] > th:
-                states.append('volatile')
-            else:
-                states.append('static')
-        return states
+        *States:* volatile (True), stable (False)
 
-    def market_states(self) -> list:
+        :param k: window size
+        :return: list: [bool], True - volatile, False - stable
+        """
+        volatility = self.volatility(n=k)
+        if self.noise_agents:  # Here I determine threshold for volatility
+            ### Maybe 1.96 * price_deviation
+            price_deviation = 1 / self.noise_agents[0].lambda_  # Noise trader price standard deviation
+        else:
+            price_deviation = 1
+
+        return volatility > price_deviation
+
+    def market_states(self) -> np.ndarray:
         """
         *States:* price, volume - increasing or decreasing; volatility - volatile or stable
         """
-        price = self.price_states(.7)
-        volume = self.volume_states(.7)
-        liquid = self.volatility_states(.3)
-        states = list()
-
-        for i in range(len(price)):
-            states.append(' '.join([price[i][0], volume[i][0], liquid[i][:3]]))
-        return states
+        price = np.vectorize({True: 'i', False: 'd'}.get)(self.price_states(k=10))
+        volume = np.vectorize({True: 'i', False: 'd'}.get)(self.volume_states(k=10))
+        liquid = np.vectorize({True: 'vol', False: 'sta'}.get)(self.volatility_states(k=10))
+        n = min([price.shape[0], volume.shape[0], liquid.shape[0]])
+        states = [' '.join([price[i], volume[i], liquid[i]]) for i in range(n)]
+        return np.array(states)
 
     @classmethod
     def states_markov(cls, states: list, order=None):

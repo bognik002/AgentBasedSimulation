@@ -1,49 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="Removing trend tests">
+    <list default="true" id="a75aece1-81cb-4f56-91b0-918738b8a8b6" name="Default Changelist" comment="price diff">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/img.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/img_1.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/img_2.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/img_3.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(mm_lag=0).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(mm_lag=10).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(mm_lag=20).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(mm_lag=30).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(mm_lag=40).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(nt_lag=0).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(nt_lag=10).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(nt_lag=20).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(nt_lag=30).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/inventory(nt_lag=40).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(mm_lag=0).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(mm_lag=10).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(mm_lag=20).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(mm_lag=30).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(mm_lag=40).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(nt_lag=0).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(nt_lag=10).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(nt_lag=20).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(nt_lag=30).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/price(nt_lag=40).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(mm_lag=0).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(mm_lag=10).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(mm_lag=20).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(mm_lag=30).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(mm_lag=40).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(nt_lag=0).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(nt_lag=10).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(nt_lag=20).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(nt_lag=30).png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/pictures/volume(nt_lag=40).png" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/simulator.py" beforeDir="false" afterPath="$PROJECT_DIR$/simulator.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/test1.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test2.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test3.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test4.ipynb" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/test5.ipynb" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -108,7 +68,7 @@
       <recent name="C:\Users\bogni\Financial Liquidity Forecasting\AgentBasedModel\pictures" />
     </key>
   </component>
-  <component name="RunManager" selected="Python.main">
+  <component name="RunManager" selected="Python.test">
     <configuration name="main" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Agend Based Simulation" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -155,8 +115,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.main" />
         <item itemvalue="Python.test" />
+        <item itemvalue="Python.main" />
         <item itemvalue="Python.main" />
         <item itemvalue="Python.test" />
         <item itemvalue="Python.test" />
@@ -214,7 +174,7 @@
       <workItem from="1622656544199" duration="2666000" />
       <workItem from="1622763993270" duration="5067000" />
       <workItem from="1622903620042" duration="6469000" />
-      <workItem from="1625605500042" duration="2858000" />
+      <workItem from="1625605500042" duration="8979000" />
     </task>
     <task id="LOCAL-00001" summary="changed behaviour of noise traders, market no more running out of volume, changed initialization of market makers, no more inventory unused, added market makers states, need to add behavior for it">
       <created>1618224285368</created>
@@ -398,7 +358,14 @@
       <option name="project" value="LOCAL" />
       <updated>1625607535981</updated>
     </task>
-    <option name="localTasksCounter" value="27" />
+    <task id="LOCAL-00027" summary="price diff">
+      <created>1625608778712</created>
+      <option name="number" value="00027" />
+      <option name="presentableId" value="LOCAL-00027" />
+      <option name="project" value="LOCAL" />
+      <updated>1625608778712</updated>
+    </task>
+    <option name="localTasksCounter" value="28" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -440,7 +407,8 @@
     <MESSAGE value="Heatmap colors" />
     <MESSAGE value="Final version" />
     <MESSAGE value="Removing trend tests" />
-    <option name="LAST_COMMIT_MESSAGE" value="Removing trend tests" />
+    <MESSAGE value="price diff" />
+    <option name="LAST_COMMIT_MESSAGE" value="price diff" />
   </component>
   <component name="XDebuggerManager">
     <watches-manager>
@@ -450,7 +418,7 @@
     </watches-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1622916409751" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1622657186302" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/AgentBasedModel$main.coverage" NAME="main Coverage Results" MODIFIED="1625610124464" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/AgentBasedModel$test.coverage" NAME="test Coverage Results" MODIFIED="1625617447580" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
